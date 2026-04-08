@@ -1,0 +1,28 @@
+{
+  "k": 3,
+  "normalize": true,
+  "corpus": [
+    "DSPy Signatures define the input and output fields for language model calls. A signature like 'question -> answer' tells DSPy what the LM should receive and produce. Class-based signatures allow adding descriptions, types, and constraints to each field.",
+    "DSPy Modules are the building blocks of programs. Every module has a forward() method that defines its behavior. Modules can contain other modules, just like PyTorch nn.Module. The two most common modules are dspy.Predict and dspy.ChainOfThought.",
+    "dspy.Predict is the simplest module. It takes a signature and calls the language model once. dspy.ChainOfThought extends Predict by asking the model to show its reasoning step-by-step before producing the final answer. ChainOfThought is better for complex reasoning tasks.",
+    "dspy.ChainOfThought adds a 'reasoning' field to the output automatically. This field contains the model's step-by-step thought process. You don't need to define it in your signature \u2014 DSPy injects it for you. Access it via result.reasoning.",
+    "dspy.LM creates a language model connection. It accepts any model string supported by LiteLLM, like 'anthropic/claude-sonnet-4-6' or 'openai/gpt-5.4'. Parameters include temperature, max_tokens, and stop sequences. Configure globally with dspy.configure(lm=lm).",
+    "dspy.configure() sets global defaults for LM, adapter, and retrieval model. Use dspy.context(lm=other_lm) as a context manager to temporarily switch models for specific pipeline steps. This is the recommended way to use different models for different steps in a pipeline.",
+    "DSPy adapters control how signatures are formatted into LM prompts. ChatAdapter is the default and works well with most models. JSONAdapter forces JSON output format, which is useful for models that support structured output natively. XMLAdapter uses XML tags.",
+    "When ChatAdapter fails to parse output, it automatically falls back to JSONAdapter. You can disable this with adapter.use_json_adapter_fallback = False. This is useful when you want strict control over the output format.",
+    "DSPy supports Pydantic BaseModel as output types. Define a Pydantic model with typed fields and use it as an OutputField type. DSPy will instruct the LM to produce output matching your schema and validate it automatically. Use Literal types for constrained values.",
+    "When using Pydantic models with DSPy, field descriptions are sent to the LM as part of the prompt. Good descriptions dramatically improve output quality. Always include desc= in your Field() definitions \u2014 it's not just documentation, it's prompt engineering.",
+    "dspy.Embeddings is a retrieval module that uses dense vector search. Initialize it with a corpus (list of strings), an embedder function, and k (number of results). It computes embeddings for the corpus upfront and uses similarity search to find relevant passages.",
+    "The embedder parameter in dspy.Embeddings can be a hosted model string like 'openai/text-embedding-3-small' or a custom callable that takes a list of strings and returns a numpy array of embeddings. Custom embedders must produce consistent dimensions.",
+    "dspy.Embedder wraps embedding functions into a consistent interface. It handles batching, normalization, and caching. Use dspy.Embedder(model_name) for hosted models or dspy.Embedder(your_function) for custom embedding functions.",
+    "dspy.Evaluate runs a DSPy program against a dataset and measures performance with a metric. Initialize with devset (list of Examples), metric function, and num_threads. The metric function takes (example, prediction) and returns a score between 0 and 1.",
+    "Built-in metrics include dspy.evaluate.metrics.answer_exact_match for exact string matching, and SemanticF1 for LLM-based semantic similarity. You can also write custom metrics that check for specific properties of the output.",
+    "DSPy optimizers automatically improve your program by tuning prompts, selecting demonstrations, or fine-tuning weights. Common optimizers include BootstrapFewShot (self-taught demos), MIPROv2 (instruction optimization), and LabeledFewShot (from your labeled examples).",
+    "To use an optimizer, you need three things: a DSPy program (Module), a training set (list of Examples), and a metric function. The optimizer runs your program many times, trying different configurations, and returns the best-performing version.",
+    "For production RAG systems, always evaluate retrieval quality separately from generation quality. A brilliant LM can't fix bad retrieval \u2014 if the right documents aren't in the context, the answer will be wrong or hallucinated, no matter how smart the model is.",
+    "The save() and load() methods on dspy.Embeddings let you persist your index to disk. This avoids recomputing embeddings on every startup. Use save(path) after building your index and Embeddings.from_saved(path, embedder) to load it back.",
+    "A common mistake in RAG systems is chunking documents too aggressively. If your chunks are too small, they lose context. If they're too large, retrieval becomes imprecise. For most use cases, 2-4 sentence chunks with 1-sentence overlap work well.",
+    "Another common RAG mistake is not evaluating retrieval independently. Your pipeline might score well overall because the LM is good at guessing, but your retriever might be returning irrelevant documents. Always measure recall@k for your retriever."
+  ],
+  "has_faiss_index": false
+}

@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "ch04-babel-fish"
+version = "0.1.0"
+description = "Chapter 4: The Babel Fish — Optimizers Demystified"
+authors = ["Ali Raza <ali@botterfly.app>"]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.15"
+dspy = ">=3.1.3,<4.0.0"
+python-dotenv = ">=1.2.2,<2.0.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
