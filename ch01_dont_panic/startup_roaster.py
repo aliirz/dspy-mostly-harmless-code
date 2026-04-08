@@ -72,7 +72,7 @@ def main():
     pitches = [
         (
             "An AI-powered toothbrush that writes poetry while you brush. "
-            "Uses GPT-4 to generate haikus about dental hygiene and posts "
+            "Uses an LLM to generate haikus about dental hygiene and posts "
             "them to Twitter automatically. $50/month subscription."
         ),
         (
