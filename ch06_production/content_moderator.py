@@ -497,7 +497,7 @@ def load_moderator(path: str = "moderator_v1.json") -> ContentModerator:
 def moderate_with_custom_config(
     content: str,
     model: str = "anthropic/claude-sonnet-5",
-    temperature: float = 0.0,
+    temperature: float = None,
 ):
     """Use dspy.context() for per-request model configuration.
 
@@ -506,7 +506,10 @@ def moderate_with_custom_config(
     testing models in production.
     """
     api_key = os.getenv("LLM_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
-    request_lm = dspy.LM(model, api_key=api_key, max_tokens=1024, temperature=temperature)
+    lm_kwargs = {"model": model, "api_key": api_key, "max_tokens": 1024}
+    if temperature is not None:
+        lm_kwargs["temperature"] = temperature
+    request_lm = dspy.LM(**lm_kwargs)
     moderator = ContentModerator()
 
     with dspy.context(lm=request_lm):

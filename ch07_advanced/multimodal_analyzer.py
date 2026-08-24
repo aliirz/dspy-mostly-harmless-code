@@ -249,6 +249,7 @@ class EnsembleReviewAnalyzer(dspy.Module):
         self.compare = dspy.MultiChainComparison(
             "review_text, product_category -> sentiment, quality_score",
             M=M,
+            temperature=1.0,  # Sonnet 5 only supports temperature=1
         )
 
     def forward(self, review_text: str, product_category: str = "general") -> dspy.Prediction:
@@ -258,7 +259,6 @@ class EnsembleReviewAnalyzer(dspy.Module):
             attempt = self.generate(
                 review_text=review_text,
                 product_category=product_category,
-                config={"temperature": 0.7},
             )
             completions.append({
                 "rationale": attempt.rationale if hasattr(attempt, "rationale") else "",
