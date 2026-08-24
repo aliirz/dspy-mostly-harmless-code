@@ -249,7 +249,6 @@ class EnsembleReviewAnalyzer(dspy.Module):
         self.compare = dspy.MultiChainComparison(
             "review_text, product_category -> sentiment, quality_score",
             M=M,
-            temperature=0.7,
         )
 
     def forward(self, review_text: str, product_category: str = "general") -> dspy.Prediction:
@@ -572,7 +571,7 @@ def demonstrate_gepa_setup():
         "anthropic/claude-sonnet-5",
         api_key=api_key,
         max_tokens=4096,
-        temperature=1.0,
+
     )
 
     optimizer = GEPA(

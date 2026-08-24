@@ -290,7 +290,7 @@ def main():
     # --- Setup ---
     lm = dspy.LM(
         "anthropic/claude-sonnet-5",
-        temperature=0.7,
+
         max_tokens=1500,
     )
     dspy.configure(lm=lm)

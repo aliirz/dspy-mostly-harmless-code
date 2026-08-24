@@ -126,7 +126,7 @@ def test_per_predictor_lm():
     print("TEST: Per-predictor LM assignment...")
 
     engine = LeadIntelligenceEngine()
-    powerful = dspy.LM("anthropic/claude-sonnet-5", temperature=0.7)
+    powerful = dspy.LM("anthropic/claude-sonnet-5")
     fast = dspy.LM("anthropic/claude-haiku-4-5", temperature=0.3)
 
     engine.research.set_lm(powerful)
@@ -172,7 +172,7 @@ def test_live_pipeline():
 
     lm = dspy.LM(
         "anthropic/claude-sonnet-5",
-        temperature=0.7,
+
         max_tokens=2000,
     )
     dspy.configure(lm=lm)

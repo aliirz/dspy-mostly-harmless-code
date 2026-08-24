@@ -444,7 +444,7 @@ def answer_quality_reward(args, prediction):
 def main():
     lm = dspy.LM(
         "anthropic/claude-sonnet-5",
-        temperature=0.7,
+
         max_tokens=4000,
     )
     dspy.configure(lm=lm)
