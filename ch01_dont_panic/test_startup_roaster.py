@@ -122,17 +122,17 @@ def test_lm_configuration():
     print("TEST: LM configuration...")
 
     lm = dspy.LM(
-        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-sonnet-5",
         temperature=0.7,
         max_tokens=1000,
     )
-    assert lm.model == "anthropic/claude-sonnet-4-6"
+    assert lm.model == "anthropic/claude-sonnet-5"
 
     # Test configure
     dspy.configure(lm=lm)
 
     # Test context manager for temporary overrides
-    alt_lm = dspy.LM("openai/gpt-5.4-mini", temperature=0.5)
+    alt_lm = dspy.LM("openai/gpt-5.6-mini", temperature=0.5)
     with dspy.context(lm=alt_lm):
         # Inside context, alt_lm is active
         pass
@@ -154,7 +154,7 @@ def test_live_api_call():
     print("TEST: Live API call...")
 
     lm = dspy.LM(
-        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-sonnet-5",
         temperature=0.7,
         max_tokens=1000,
     )

@@ -76,7 +76,7 @@ def test_rlm_module_structure():
     )
 
     # The RLM should have the expected configuration
-    assert engine.analyze.max_iterations == 12
+    assert engine.analyze.max_iters == 12
     assert engine.analyze.max_llm_calls == 20
 
     print("  PASSED: Module structure correct")
@@ -113,7 +113,7 @@ def test_rlm_sub_lm_wiring():
     """Verify sub_lm is passed through correctly."""
     print("TEST: sub_lm wiring...")
 
-    cheap_lm = dspy.LM("anthropic/claude-haiku-4-5-20251001", max_tokens=1000)
+    cheap_lm = dspy.LM("anthropic/claude-haiku-4-5", max_tokens=1000)
     engine = ContractIntelligenceEngine(sub_lm=cheap_lm)
 
     assert engine.analyze.sub_lm is cheap_lm, (
@@ -206,8 +206,8 @@ def test_live_rlm_call():
 
     print("TEST: Live RLM call (this will take ~30–60 seconds)...")
 
-    main_lm = dspy.LM("anthropic/claude-sonnet-4-6", max_tokens=4000)
-    cheap_lm = dspy.LM("anthropic/claude-haiku-4-5-20251001", max_tokens=2000)
+    main_lm = dspy.LM("anthropic/claude-sonnet-5", max_tokens=4000)
+    cheap_lm = dspy.LM("anthropic/claude-haiku-4-5", max_tokens=2000)
     dspy.configure(lm=main_lm)
 
     engine = ContractIntelligenceEngine(sub_lm=cheap_lm)

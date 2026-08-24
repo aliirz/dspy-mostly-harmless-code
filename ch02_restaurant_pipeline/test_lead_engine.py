@@ -126,8 +126,8 @@ def test_per_predictor_lm():
     print("TEST: Per-predictor LM assignment...")
 
     engine = LeadIntelligenceEngine()
-    powerful = dspy.LM("anthropic/claude-sonnet-4-6", temperature=0.7)
-    fast = dspy.LM("anthropic/claude-haiku-4-5-20251001", temperature=0.3)
+    powerful = dspy.LM("anthropic/claude-sonnet-5", temperature=0.7)
+    fast = dspy.LM("anthropic/claude-haiku-4-5", temperature=0.3)
 
     engine.research.set_lm(powerful)
     engine.classify.set_lm(fast)
@@ -146,7 +146,7 @@ def test_adapters():
     """Verify adapter instantiation and configuration."""
     print("TEST: Adapter configuration...")
 
-    lm = dspy.LM("anthropic/claude-sonnet-4-6")
+    lm = dspy.LM("anthropic/claude-sonnet-5")
 
     # ChatAdapter (default)
     dspy.configure(lm=lm)
@@ -171,7 +171,7 @@ def test_live_pipeline():
     print("TEST: Live pipeline (4 LLM calls)...")
 
     lm = dspy.LM(
-        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-sonnet-5",
         temperature=0.7,
         max_tokens=2000,
     )

@@ -32,7 +32,7 @@ HAS_API_KEY = bool(API_KEY)
 if HAS_API_KEY:
     import dspy
 
-    lm = dspy.LM("anthropic/claude-sonnet-4-6", api_key=API_KEY, max_tokens=2048)
+    lm = dspy.LM("anthropic/claude-sonnet-5", api_key=API_KEY, max_tokens=2048)
     dspy.configure(lm=lm)
 
 

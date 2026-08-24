@@ -95,7 +95,7 @@ class ContractIntelligenceEngine(dspy.Module):
 
         self.analyze = dspy.RLM(
             analysis_sig,
-            max_iterations=12,
+            max_iters=12,
             max_llm_calls=20,
             sub_lm=sub_lm,
             tools=[extract_section],
@@ -217,11 +217,11 @@ The prevailing party shall be entitled to recover reasonable attorneys' fees.
 def main():
     # Two-model strategy: Sonnet for orchestration, Haiku for extraction
     main_lm = dspy.LM(
-        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-sonnet-5",
         max_tokens=4000,
     )
     cheap_lm = dspy.LM(
-        "anthropic/claude-haiku-4-5-20251001",
+        "anthropic/claude-haiku-4-5",
         max_tokens=2000,
     )
 

@@ -50,7 +50,7 @@ def image_from_url(url: str) -> "dspy.Image":
     Set download=True to fetch the image and encode it as base64
     (useful when the URL might expire or require auth).
     """
-    return dspy.Image(url)
+    return dspy.Image.from_url(url)
 
 
 def image_from_file(path: str) -> "dspy.Image":
@@ -59,7 +59,7 @@ def image_from_file(path: str) -> "dspy.Image":
     Supports PNG, JPEG, GIF, WebP, and other common formats.
     The image is automatically base64-encoded.
     """
-    return dspy.Image(path)
+    return dspy.Image.from_path(path)
 
 
 # ---------------------------------------------------------------------------
@@ -523,7 +523,6 @@ def demonstrate_better_together_setup():
 
     optimizer = BetterTogether(
         metric=lambda example, prediction, trace=None: prediction.result.confidence > 0.8,
-        seed=42,
         # Uses BootstrapFewShotWithRandomSearch for prompts
         # Uses BootstrapFinetune for weights
     )
@@ -570,7 +569,7 @@ def demonstrate_gepa_setup():
     # and propose better instructions. This is typically your best available model.
     api_key = os.getenv("LLM_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
     reflection_lm = dspy.LM(
-        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-sonnet-5",
         api_key=api_key,
         max_tokens=4096,
         temperature=1.0,
@@ -668,7 +667,7 @@ if __name__ == "__main__":
         print("Set LLM_API_KEY or ANTHROPIC_API_KEY in your .env file")
         exit(1)
 
-    lm = dspy.LM("anthropic/claude-sonnet-4-6", api_key=api_key, max_tokens=2048)
+    lm = dspy.LM("anthropic/claude-sonnet-5", api_key=api_key, max_tokens=2048)
     dspy.configure(lm=lm)
 
     print("=" * 60)

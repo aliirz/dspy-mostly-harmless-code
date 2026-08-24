@@ -21,3 +21,5 @@ build/
 htmlcov/
 .coverage
 .dspy_cache/
+.test-venv/
+.test-venv2/
