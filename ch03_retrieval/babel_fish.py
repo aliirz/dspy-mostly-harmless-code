@@ -45,7 +45,7 @@ DOCS_CORPUS = [
 
     # Configuration
     "dspy.LM creates a language model connection. It accepts any model string supported by "
-    "LiteLLM, like 'anthropic/claude-sonnet-4-6' or 'openai/gpt-5.4'. Parameters include "
+    "LiteLLM, like 'anthropic/claude-sonnet-5' or 'openai/gpt-5.6'. Parameters include "
     "temperature, max_tokens, and stop sequences. Configure globally with dspy.configure(lm=lm).",
 
     "dspy.configure() sets global defaults for LM, adapter, and retrieval model. "
@@ -300,7 +300,7 @@ QA_DATASET = [
 
 def main():
     lm = dspy.LM(
-        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-sonnet-5",
         temperature=0.7,
         max_tokens=1500,
     )

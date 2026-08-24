@@ -570,7 +570,7 @@ def demonstrate_gepa_setup():
     # and propose better instructions. This is typically your best available model.
     api_key = os.getenv("LLM_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
     reflection_lm = dspy.LM(
-        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-sonnet-5",
         api_key=api_key,
         max_tokens=4096,
         temperature=1.0,
@@ -668,7 +668,7 @@ if __name__ == "__main__":
         print("Set LLM_API_KEY or ANTHROPIC_API_KEY in your .env file")
         exit(1)
 
-    lm = dspy.LM("anthropic/claude-sonnet-4-6", api_key=api_key, max_tokens=2048)
+    lm = dspy.LM("anthropic/claude-sonnet-5", api_key=api_key, max_tokens=2048)
     dspy.configure(lm=lm)
 
     print("=" * 60)

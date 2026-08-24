@@ -138,10 +138,10 @@ def demonstrate_cache_behavior():
 
 
 # To disable caching for a specific LM (useful during development):
-# lm = dspy.LM("anthropic/claude-sonnet-4-6", cache=False)
+# lm = dspy.LM("anthropic/claude-sonnet-5", cache=False)
 
 # To disable caching globally:
-# dspy.configure(lm=dspy.LM("anthropic/claude-sonnet-4-6", cache=False))
+# dspy.configure(lm=dspy.LM("anthropic/claude-sonnet-5", cache=False))
 
 
 # ---------------------------------------------------------------------------
@@ -314,7 +314,7 @@ def create_fallback_chain():
 
     # Primary: Claude Sonnet (best quality)
     primary = dspy.LM(
-        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-sonnet-5",
         api_key=api_key,
         max_tokens=1024,
         num_retries=2,  # Retry twice before falling through
@@ -322,7 +322,7 @@ def create_fallback_chain():
 
     # Secondary: Claude Haiku (faster, cheaper, still good)
     secondary = dspy.LM(
-        "anthropic/claude-haiku-4-5-20251001",
+        "anthropic/claude-haiku-4-5",
         api_key=api_key,
         max_tokens=1024,
         num_retries=2,
@@ -496,7 +496,7 @@ def load_moderator(path: str = "moderator_v1.json") -> ContentModerator:
 
 def moderate_with_custom_config(
     content: str,
-    model: str = "anthropic/claude-sonnet-4-6",
+    model: str = "anthropic/claude-sonnet-5",
     temperature: float = 0.0,
 ):
     """Use dspy.context() for per-request model configuration.
@@ -542,7 +542,7 @@ def create_app():
 
     # The global LM — used unless overridden per-request
     primary_lm = dspy.LM(
-        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-sonnet-5",
         api_key=api_key,
         max_tokens=1024,
         num_retries=3,
@@ -566,7 +566,7 @@ def create_app():
 
     class ModerationResponse(BaseModel):
         decision: ModerationDecision
-        model_used: str = "anthropic/claude-sonnet-4-6"
+        model_used: str = "anthropic/claude-sonnet-5"
         cached: bool = False
         processing_time_ms: float = 0.0
 
@@ -709,7 +709,7 @@ if __name__ == "__main__":
         print("Set LLM_API_KEY or ANTHROPIC_API_KEY in your .env file")
         exit(1)
 
-    lm = dspy.LM("anthropic/claude-sonnet-4-6", api_key=api_key, max_tokens=1024)
+    lm = dspy.LM("anthropic/claude-sonnet-5", api_key=api_key, max_tokens=1024)
     dspy.configure(lm=lm)
 
     print("=" * 60)

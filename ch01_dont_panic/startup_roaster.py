@@ -59,7 +59,7 @@ class StartupRoaster(dspy.Module):
 def main():
     # Configure the LM
     lm = dspy.LM(
-        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-sonnet-5",
         temperature=0.7,
         max_tokens=1000,
     )

@@ -34,7 +34,7 @@ HAS_API_KEY = bool(API_KEY)
 
 if HAS_API_KEY:
     import dspy
-    lm = dspy.LM("anthropic/claude-sonnet-4-6", api_key=API_KEY, max_tokens=1024)
+    lm = dspy.LM("anthropic/claude-sonnet-5", api_key=API_KEY, max_tokens=1024)
     dspy.configure(lm=lm)
 
 
@@ -309,7 +309,7 @@ def test_16_per_request_config():
 
     decision = moderate_with_custom_config(
         content="Great weather today! Perfect for a walk.",
-        model="anthropic/claude-sonnet-4-6",
+        model="anthropic/claude-sonnet-5",
     )
 
     assert decision.category == "safe"

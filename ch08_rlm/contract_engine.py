@@ -217,11 +217,11 @@ The prevailing party shall be entitled to recover reasonable attorneys' fees.
 def main():
     # Two-model strategy: Sonnet for orchestration, Haiku for extraction
     main_lm = dspy.LM(
-        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-sonnet-5",
         max_tokens=4000,
     )
     cheap_lm = dspy.LM(
-        "anthropic/claude-haiku-4-5-20251001",
+        "anthropic/claude-haiku-4-5",
         max_tokens=2000,
     )
 
