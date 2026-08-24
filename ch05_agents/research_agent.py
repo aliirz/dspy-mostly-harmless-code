@@ -19,7 +19,7 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 load_dotenv()
 
