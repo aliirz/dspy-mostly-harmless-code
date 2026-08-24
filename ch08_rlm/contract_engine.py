@@ -95,7 +95,7 @@ class ContractIntelligenceEngine(dspy.Module):
 
         self.analyze = dspy.RLM(
             analysis_sig,
-            max_iterations=12,
+            max_iters=12,
             max_llm_calls=20,
             sub_lm=sub_lm,
             tools=[extract_section],

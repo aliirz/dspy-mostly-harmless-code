@@ -76,7 +76,7 @@ def test_rlm_module_structure():
     )
 
     # The RLM should have the expected configuration
-    assert engine.analyze.max_iterations == 12
+    assert engine.analyze.max_iters == 12
     assert engine.analyze.max_llm_calls == 20
 
     print("  PASSED: Module structure correct")

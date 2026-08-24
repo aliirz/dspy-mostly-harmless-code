@@ -50,7 +50,7 @@ def image_from_url(url: str) -> "dspy.Image":
     Set download=True to fetch the image and encode it as base64
     (useful when the URL might expire or require auth).
     """
-    return dspy.Image(url)
+    return dspy.Image.from_url(url)
 
 
 def image_from_file(path: str) -> "dspy.Image":
@@ -59,7 +59,7 @@ def image_from_file(path: str) -> "dspy.Image":
     Supports PNG, JPEG, GIF, WebP, and other common formats.
     The image is automatically base64-encoded.
     """
-    return dspy.Image(path)
+    return dspy.Image.from_path(path)
 
 
 # ---------------------------------------------------------------------------
@@ -523,7 +523,6 @@ def demonstrate_better_together_setup():
 
     optimizer = BetterTogether(
         metric=lambda example, prediction, trace=None: prediction.result.confidence > 0.8,
-        seed=42,
         # Uses BootstrapFewShotWithRandomSearch for prompts
         # Uses BootstrapFinetune for weights
     )
