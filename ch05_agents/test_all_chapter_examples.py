@@ -37,7 +37,7 @@ API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 
 def setup_lm():
-    lm = dspy.LM("anthropic/claude-sonnet-5", temperature=0.7, max_tokens=4000)
+    lm = dspy.LM("anthropic/claude-sonnet-5", max_tokens=4000)
     dspy.configure(lm=lm)
     return lm
 

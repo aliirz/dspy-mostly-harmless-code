@@ -6,7 +6,7 @@ authors = ["Ali Raza <ali@botterfly.app>"]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.15"
-dspy = ">=3.3.1,<4.0.0"
+dspy = {version = ">=3.3.1,<4.0.0", extras = ["numpy"]}
 python-dotenv = ">=1.2.2,<2.0.0"
 openai = "^2.28.0"
 

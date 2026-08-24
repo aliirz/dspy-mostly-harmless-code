@@ -26,7 +26,7 @@ API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 
 def setup_lm():
-    lm = dspy.LM("anthropic/claude-sonnet-5", temperature=0.7, max_tokens=2000)
+    lm = dspy.LM("anthropic/claude-sonnet-5", max_tokens=2000)
     dspy.configure(lm=lm)
     return lm
 
@@ -123,7 +123,7 @@ def test_adapter_switching():
     """Test running with JSONAdapter as shown in chapter."""
     print("TEST: Adapter switching (JSONAdapter)...")
 
-    lm = dspy.LM("anthropic/claude-sonnet-5", temperature=0.7, max_tokens=2000)
+    lm = dspy.LM("anthropic/claude-sonnet-5", max_tokens=2000)
     dspy.configure(lm=lm, adapter=dspy.JSONAdapter())
 
     engine = LeadIntelligenceEngine()
@@ -228,8 +228,8 @@ def test_cost_optimized_engine():
             )
 
     # Exactly as shown in "Usage:" section
-    powerful = dspy.LM("anthropic/claude-sonnet-5", temperature=0.7, max_tokens=2000)
-    fast = dspy.LM("anthropic/claude-sonnet-5", temperature=0.0, max_tokens=1000)
+    powerful = dspy.LM("anthropic/claude-sonnet-5", max_tokens=2000)
+    fast = dspy.LM("anthropic/claude-sonnet-5", max_tokens=1000)
     dspy.configure(lm=powerful)
 
     engine = CostOptimizedEngine(powerful_lm=powerful, fast_lm=fast)

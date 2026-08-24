@@ -23,3 +23,5 @@ htmlcov/
 .dspy_cache/
 .test-venv/
 .test-venv2/
+ch03_retrieval/dspy/
+dspy/

@@ -71,7 +71,7 @@ def get_openai_retriever():
 
 
 def setup_lm():
-    lm = dspy.LM("anthropic/claude-sonnet-5", temperature=0.7, max_tokens=1500)
+    lm = dspy.LM("anthropic/claude-sonnet-5", max_tokens=1500)
     dspy.configure(lm=lm)
     return lm
 
