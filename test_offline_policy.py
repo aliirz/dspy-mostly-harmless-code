@@ -348,6 +348,70 @@ def test_script_entry_point_is_green_offline_with_dummy_keys(chapter_dir, test_f
     assert "SKIPPED" in output, f"{chapter_dir}/{test_file} skipped nothing:\n{output}"
 
 
+# ---------------------------------------------------------------------------
+# 5. Importing a chapter's tests never dials out
+# ---------------------------------------------------------------------------
+
+#: Import the test module with the network primitives replaced by recorders.
+#: The recorder raises (so a swallowed exception still leaves a trace) and the
+#: probe reports every attempt it saw. ch05 used to probe GitHub at import time
+#: and hide the failure behind `except Exception`, so `--fast` looked clean
+#: while a direct pytest run still went out to api.github.com.
+IMPORT_PROBE = """
+import importlib.util, json, socket, sys
+
+attempts = []
+
+def record(what, target):
+    attempts.append(what + " " + repr(target))
+    raise RuntimeError("offline test run blocked a network call (" + what + " " + repr(target) + ")")
+
+import requests
+requests.get = lambda url, *a, **kw: record("requests.get", url)
+requests.Session.request = lambda self, method, url, *a, **kw: record("requests.Session.request " + str(method), url)
+
+real_connect = socket.socket.connect
+def connect(self, address):
+    if self.family == socket.AF_UNIX:
+        return real_connect(self, address)
+    return record("socket.connect", address)
+socket.socket.connect = connect
+socket.create_connection = lambda address, *a, **kw: record("socket.create_connection", address)
+socket.getaddrinfo = lambda host, port, *a, **kw: record("socket.getaddrinfo", (host, port))
+
+sys.path.insert(0, sys.argv[2])
+spec = importlib.util.spec_from_file_location("chapter_import_probe", sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+print("PROBE:" + json.dumps({
+    "attempts": attempts,
+    "has_network": getattr(mod, "HAS_NETWORK", None),
+}))
+"""
+
+
+@pytest.mark.parametrize("chapter_dir,test_file", registered_files())
+def test_import_has_no_network_side_effect(chapter_dir, test_file):
+    """Importing a chapter's tests offline makes no request at all."""
+    chapter_path = REPO_ROOT / chapter_dir
+    result = run(
+        [sys.executable, "-c", IMPORT_PROBE, str(chapter_path / test_file), str(REPO_ROOT)],
+        cwd=chapter_path,
+        offline=True,
+        keys="none",  # credentials must not be the reason a probe stays quiet
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
+    line = next(l for l in result.stdout.splitlines() if l.startswith("PROBE:"))
+    report = json.loads(line[len("PROBE:"):])
+    assert report["attempts"] == [], (
+        f"{chapter_dir}/{test_file} dials out just by being imported: {report['attempts']}"
+    )
+    assert report["has_network"] is not True, (
+        f"{chapter_dir}/{test_file} claims network access in an offline run"
+    )
+
+
 def test_network_guard_actually_blocks():
     """Sanity check: the offline guard is not a no-op."""
     probe = (

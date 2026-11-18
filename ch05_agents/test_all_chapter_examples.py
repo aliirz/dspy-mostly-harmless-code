@@ -52,7 +52,15 @@ def setup_lm():
 
 
 def network_available():
-    """Check if we can reach external APIs."""
+    """Check if we can reach external APIs.
+
+    An offline run must not dial out even to find out whether it could: the
+    flag answers the question, so importing this module never touches the
+    network (with the socket guard on, a request here would be an error the
+    broad `except` below would silently swallow).
+    """
+    if offline_mode():
+        return False
     import requests
     try:
         requests.get("https://api.github.com", timeout=5)
