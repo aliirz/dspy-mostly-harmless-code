@@ -58,9 +58,29 @@ executes `test_offline_policy.py`, which checks that:
 
 * every chapter test file is registered in the runner (no orphaned tests);
 * `SKIP_LIVE_TESTS=1` marks every live test skipped even with dummy provider
-  keys exported, and leaves them enabled without it;
+  keys exported, and leaves them enabled without it — through both entry
+  points, `python test_all_chapter_examples.py` and `python -m pytest`;
+* a key for one provider never unlocks another provider's live test
+  (`ch03`'s embedding tests want OpenAI, the rest want Anthropic);
 * the offline chapters stay green with dummy keys while
   `offline_guard/sitecustomize.py` turns any outbound socket into an error.
+
+`--fast` also installs `offline_guard/` into the chapter processes, so a live
+test that forgets its marker fails loudly instead of dialling out.
+
+### Container Run
+
+`Dockerfile.test` (plus `requirements-test.txt` and `.fleet-test.json`) builds
+one image with the dependencies of all eight chapters and runs the whole
+offline suite:
+
+```bash
+docker build -f Dockerfile.test -t harmless-code-tests .
+docker run --rm harmless-code-tests
+```
+
+The image points `DSPY_REPO_PATH` at the installed `dspy` package, so ch03's
+codebase-Q&A tests load a real source tree instead of skipping.
 
 ## Repository Structure
 
@@ -70,6 +90,9 @@ executes `test_offline_policy.py`, which checks that:
 ├── chapter_test_support.py             # Shared offline/live policy for every chapter
 ├── test_offline_policy.py              # Guard test: offline policy, registry, no network
 ├── offline_guard/sitecustomize.py      # Blocks outbound sockets in offline runs
+├── Dockerfile.test                     # Container recipe for the whole suite
+├── requirements-test.txt               # Dependency union for that image
+├── .fleet-test.json                    # fleet-test profile: container-test
 ├── ch01_dont_panic/                    # Signatures, Modules, first program
 │   ├── startup_roaster.py
 │   └── test_startup_roaster.py
