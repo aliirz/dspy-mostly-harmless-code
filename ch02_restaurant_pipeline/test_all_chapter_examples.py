@@ -18,7 +18,7 @@ from typing import Literal
 
 # Shared live/offline policy (repo root); see chapter_test_support.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from chapter_test_support import live_tests_enabled  # noqa: E402
+from chapter_test_support import live_test, run_tests  # noqa: E402
 
 from lead_engine import (
     CompanyIntel, IntentClassification,
@@ -37,6 +37,7 @@ def setup_lm():
 # ============================================================
 # EXAMPLE 1: Summarizer (line 24-32 of chapter)
 # ============================================================
+@live_test()
 def test_summarizer():
     """Test the basic Summarizer module from the chapter."""
     print("TEST: Summarizer module...")
@@ -62,6 +63,7 @@ def test_summarizer():
 # ============================================================
 # EXAMPLE 2: ResearchAndSummarize (line 37-46 of chapter)
 # ============================================================
+@live_test()
 def test_research_and_summarize():
     """Test the chained ResearchAndSummarize module."""
     print("TEST: ResearchAndSummarize module...")
@@ -88,6 +90,7 @@ def test_research_and_summarize():
 # ============================================================
 # EXAMPLE 3: Full LeadIntelligenceEngine (already tested, but run again)
 # ============================================================
+@live_test()
 def test_lead_intelligence_engine():
     """Test the main pipeline from the chapter."""
     print("TEST: LeadIntelligenceEngine full pipeline...")
@@ -122,6 +125,7 @@ def test_lead_intelligence_engine():
 # ============================================================
 # EXAMPLE 4: Adapter switching (line 370-402 of chapter)
 # ============================================================
+@live_test()
 def test_adapter_switching():
     """Test running with JSONAdapter as shown in chapter."""
     print("TEST: Adapter switching (JSONAdapter)...")
@@ -169,6 +173,7 @@ def test_auto_fallback_config():
 # ============================================================
 # EXAMPLE 6: CostOptimizedEngine with dspy.context() (line 429-484)
 # ============================================================
+@live_test()
 def test_cost_optimized_engine():
     """Test the CostOptimizedEngine EXACTLY as written in the chapter."""
     print("TEST: CostOptimizedEngine with dspy.context()...")
@@ -263,6 +268,7 @@ def test_cost_optimized_engine():
 # ============================================================
 # EXAMPLE 7: SmartLeadEngine branching (line 522-574)
 # ============================================================
+@live_test()
 def test_smart_lead_engine_branching():
     """Test the branching pipeline from the chapter."""
     print("TEST: SmartLeadEngine branching pipeline...")
@@ -364,6 +370,7 @@ def test_smart_lead_engine_branching():
 # ============================================================
 # EXAMPLE 8: Parallel / batch execution (line 612-658)
 # ============================================================
+@live_test()
 def test_batch_execution():
     """Test the batch execution pattern from the chapter."""
     print("TEST: Batch execution (2 prospects)...")
@@ -407,30 +414,15 @@ def test_batch_execution():
 # ============================================================
 # MAIN
 # ============================================================
-# ---------------------------------------------------------------------------
-# Live-test classification
-# ---------------------------------------------------------------------------
-# Tests in this set call a live LM (and usually the network). SKIP_LIVE_TESTS=1
-# (what run_all_tests.py --fast sets) skips them rather than failing with no key.
-LIVE_TESTS = {
-    "test_summarizer",
-    "test_research_and_summarize",
-    "test_lead_intelligence_engine",
-    "test_adapter_switching",
-    "test_cost_optimized_engine",
-    "test_smart_lead_engine_branching",
-    "test_batch_execution",
-}
-
-
 def main():
-    skip_live = not live_tests_enabled()
     print("=" * 60)
     print("Chapter 2: EVERY Code Example Tested")
     print("DSPy: The Mostly Harmless Guide")
     print("=" * 60)
     print()
 
+    # The seven model-calling examples are marked @live_test(); the rest are
+    # structural and always run.
     tests = [
         test_summarizer,
         test_research_and_summarize,
@@ -442,32 +434,7 @@ def main():
         test_batch_execution,
     ]
 
-    passed = 0
-    failed = 0
-    skipped = 0
-
-    for test in tests:
-        if skip_live and test.__name__ in LIVE_TESTS:
-            print(f"  SKIPPED (live API): {test.__name__}")
-            skipped += 1
-            continue
-        try:
-            test()
-            passed += 1
-        except AssertionError as e:
-            print(f"  FAILED: {e}")
-            failed += 1
-        except Exception as e:
-            print(f"  ERROR: {type(e).__name__}: {e}")
-            failed += 1
-        print()
-
-    print("=" * 60)
-    print(f"Results: {passed}/{len(tests)} passed, {failed} failed, {skipped} skipped")
-    print("=" * 60)
-
-    if failed > 0:
-        sys.exit(1)
+    run_tests(tests)
 
 
 if __name__ == "__main__":

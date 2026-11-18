@@ -19,7 +19,14 @@ import dspy
 
 # Shared live/offline policy (repo root); see chapter_test_support.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from chapter_test_support import live_tests_enabled  # noqa: E402
+from chapter_test_support import (  # noqa: E402
+    api_key_available,
+    live_test,
+    offline_mode,
+    run_tests,
+    skip_test_unless,
+    skip_test_when,
+)
 from pydantic import BaseModel, Field, ValidationError
 from typing import Literal
 
@@ -85,6 +92,7 @@ def setup_lm():
 # ============================================================
 # EXAMPLE 1: load_codebase — loads files from a repo
 # ============================================================
+@skip_test_unless(lambda: os.path.isdir(REPO_PATH), "needs the DSPy source tree (set DSPY_REPO_PATH or clone dspy beside this repo)")
 def test_load_codebase():
     """Test loading source files from the DSPy repo."""
     print("TEST: load_codebase...")
@@ -112,6 +120,7 @@ def test_load_codebase():
 # ============================================================
 # EXAMPLE 2: chunk_code_files — splits files into chunks
 # ============================================================
+@skip_test_unless(lambda: os.path.isdir(REPO_PATH), "needs the DSPy source tree (set DSPY_REPO_PATH or clone dspy beside this repo)")
 def test_chunk_code_files():
     """Test chunking source files into overlapping windows."""
     print("TEST: chunk_code_files...")
@@ -179,6 +188,7 @@ def test_tfidf_embedder():
 # ============================================================
 # EXAMPLE 4: dspy.Embeddings — basic retrieval (tfidf)
 # ============================================================
+@skip_test_unless(lambda: os.path.isdir(REPO_PATH), "needs the DSPy source tree (set DSPY_REPO_PATH or clone dspy beside this repo)")
 def test_embeddings_retrieval():
     """Test dspy.Embeddings with real codebase chunks."""
     print("TEST: dspy.Embeddings with codebase (tfidf)...")
@@ -202,13 +212,10 @@ def test_embeddings_retrieval():
 # ============================================================
 # EXAMPLE 5: OpenAI Embedder — hosted model retrieval
 # ============================================================
+@live_test("openai")
 def test_openai_embedder():
     """Test dspy.Embedder with OpenAI text-embedding-3-small."""
     print("TEST: OpenAI text-embedding-3-small embedder...")
-
-    if not os.getenv("OPENAI_API_KEY"):
-        print("  SKIPPED: No OPENAI_API_KEY set")
-        return
 
     # Test the embedder directly
     embedder = dspy.Embedder("openai/text-embedding-3-small", caching=True, batch_size=200)
@@ -236,6 +243,7 @@ def test_openai_embedder():
 # ============================================================
 # EXAMPLE 6: dspy.Embedder wrapper
 # ============================================================
+@skip_test_unless(lambda: os.path.isdir(REPO_PATH), "needs the DSPy source tree (set DSPY_REPO_PATH or clone dspy beside this repo)")
 def test_embedder_wrapper():
     """Test dspy.Embedder wrapping custom function."""
     print("TEST: dspy.Embedder wrapper...")
@@ -310,6 +318,7 @@ def test_signature_fields():
 # ============================================================
 # EXAMPLE 9: CodebaseQA — simple RAG with live LM
 # ============================================================
+@live_test()
 def test_codebase_qa():
     """Test the simple RAG module with live API."""
     print("TEST: CodebaseQA simple RAG...")
@@ -327,6 +336,7 @@ def test_codebase_qa():
 # ============================================================
 # EXAMPLE 10: CodebaseExplorer — full citations with live LM
 # ============================================================
+@live_test()
 def test_codebase_explorer():
     """Test the full explorer with citations."""
     print("TEST: CodebaseExplorer with citations...")
@@ -354,13 +364,11 @@ def test_codebase_explorer():
 # ============================================================
 # EXAMPLE 11: CodebaseExplorer with OpenAI embedder
 # ============================================================
+@live_test("openai")
+@live_test("anthropic")
 def test_codebase_explorer_openai():
-    """Test the full explorer using OpenAI embeddings."""
+    """Test the full explorer using OpenAI embeddings (needs both keys)."""
     print("TEST: CodebaseExplorer with OpenAI embedder...")
-
-    if not os.getenv("OPENAI_API_KEY"):
-        print("  SKIPPED: No OPENAI_API_KEY set")
-        return
 
     setup_lm()
     explorer = CodebaseExplorer(retriever=get_openai_retriever())
@@ -423,6 +431,7 @@ def test_metric():
 # ============================================================
 # EXAMPLE 13: dspy.Evaluate
 # ============================================================
+@live_test()
 def test_evaluate():
     """Test dspy.Evaluate with our metric and dataset."""
     print("TEST: dspy.Evaluate...")
@@ -445,6 +454,7 @@ def test_evaluate():
 # ============================================================
 # EXAMPLE 14: Save and Load retriever
 # ============================================================
+@skip_test_unless(lambda: os.path.isdir(REPO_PATH), "needs the DSPy source tree (set DSPY_REPO_PATH or clone dspy beside this repo)")
 def test_save_load():
     """Test saving and loading an Embeddings index."""
     print("TEST: Save and Load retriever...")
@@ -482,6 +492,11 @@ def test_save_load():
 # ============================================================
 # EXAMPLE 15: get_embedder — the smart default
 # ============================================================
+@skip_test_when(
+    offline_mode,
+    "SKIP_LIVE_TESTS is set: get_embedder() reaches the hosted OpenAI "
+    "backend when OPENAI_API_KEY is present",
+)
 def test_get_embedder():
     """Test the get_embedder() function picks the right backend."""
     print("TEST: get_embedder()...")
@@ -508,43 +523,17 @@ def test_get_embedder():
 # ============================================================
 # MAIN
 # ============================================================
-# ---------------------------------------------------------------------------
-# Live-test classification
-# ---------------------------------------------------------------------------
-# Tests in this set call a live LM (and usually the network). SKIP_LIVE_TESTS=1
-# (what run_all_tests.py --fast sets) skips them rather than failing with no key.
-LIVE_TESTS = {
-    "test_get_embedder",  # embeds through the OpenAI backend when its key is set
-    "test_openai_embedder",
-    "test_codebase_qa",
-    "test_codebase_explorer",
-    "test_codebase_explorer_openai",
-    "test_evaluate",
-}
-
-# These read the DSPy source tree at REPO_PATH (DSPY_REPO_PATH, or the checkout
-# cloned beside this repo); they are skipped, not failed, when it is absent.
-REPO_TESTS = {
-    "test_load_codebase",
-    "test_chunk_code_files",
-    "test_embeddings_retrieval",
-    "test_embedder_wrapper",
-    "test_save_load",
-}
-
-
 def main():
-    skip_live = not live_tests_enabled()
-    has_repo = os.path.isdir(REPO_PATH)
-
     print("=" * 60)
     print("Chapter 3: EVERY Code Example Tested")
     print("DSPy: The Mostly Harmless Guide")
     print("=" * 60)
     print(f"Repo path: {os.path.abspath(REPO_PATH)}")
-    print(f"OPENAI_API_KEY: {'set' if os.getenv('OPENAI_API_KEY') else 'NOT SET'}")
+    print(f"OPENAI_API_KEY: {'set' if api_key_available('openai') else 'NOT SET'}")
     print()
 
+    # Every gate lives on the test itself (@live_test / @skip_test_unless), so
+    # this list is the same under the chapter runner and under pytest.
     tests = [
         test_load_codebase,
         test_chunk_code_files,
@@ -563,39 +552,7 @@ def main():
         test_save_load,
     ]
 
-    passed = 0
-    failed = 0
-    skipped = 0
-
-    for test in tests:
-        if skip_live and test.__name__ in LIVE_TESTS:
-            print(f"  SKIPPED (live API): {test.__name__}")
-            skipped += 1
-            continue
-        if not has_repo and test.__name__ in REPO_TESTS:
-            print(f"  SKIPPED (needs DSPy source at {os.path.abspath(REPO_PATH)}): {test.__name__}")
-            skipped += 1
-            continue
-        try:
-            result = test()
-            if result is not False:
-                passed += 1
-            else:
-                failed += 1
-        except AssertionError as e:
-            print(f"  FAILED: {e}")
-            failed += 1
-        except Exception as e:
-            print(f"  ERROR: {type(e).__name__}: {e}")
-            failed += 1
-        print()
-
-    print("=" * 60)
-    print(f"Results: {passed}/{len(tests)} passed, {failed} failed, {skipped} skipped")
-    print("=" * 60)
-
-    if failed > 0:
-        sys.exit(1)
+    run_tests(tests)
 
 
 if __name__ == "__main__":

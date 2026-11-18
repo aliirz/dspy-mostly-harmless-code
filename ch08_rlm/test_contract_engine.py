@@ -24,7 +24,12 @@ import dspy
 
 # Shared live/offline policy (repo root); see chapter_test_support.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from chapter_test_support import live_tests_enabled  # noqa: E402
+from chapter_test_support import (  # noqa: E402
+    api_key_available,
+    live_test,
+    run_tests,
+    skip_test_unless,
+)
 
 from contract_engine import (
     ContractRisk,
@@ -42,8 +47,6 @@ def _deno_available() -> bool:
     return shutil.which("deno") is not None
 
 
-def _api_key_available() -> bool:
-    return bool(os.getenv("ANTHROPIC_API_KEY"))
 
 
 # ---------------------------------------------------------------------------
@@ -185,6 +188,8 @@ def test_contract_size():
 # Tier 3: Live RLM test (requires API key + Deno)
 # ---------------------------------------------------------------------------
 
+@live_test()
+@skip_test_unless(_deno_available, "Deno is not installed (curl -fsSL https://deno.land/install.sh | sh)")
 def test_live_rlm_call():
     """Full end-to-end RLM test against real API.
 
@@ -199,15 +204,6 @@ def test_live_rlm_call():
     The test accepts both outcomes and reports which path was taken.
     See: https://dspy.ai/api/modules/RLM (Notes section)
     """
-    if not _api_key_available():
-        print("TEST: Live RLM call... SKIPPED (no ANTHROPIC_API_KEY)")
-        return
-
-    if not _deno_available():
-        print("TEST: Live RLM call... SKIPPED (Deno not installed)")
-        print("  Install: curl -fsSL https://deno.land/install.sh | sh")
-        return
-
     print("TEST: Live RLM call (this will take ~30–60 seconds)...")
 
     main_lm = dspy.LM("anthropic/claude-sonnet-5", max_tokens=4000)
@@ -271,22 +267,17 @@ SERVICE AGREEMENT between TestCorp ("Client") and DevShop ("Vendor").
 # Runner
 # ---------------------------------------------------------------------------
 
-# test_live_rlm_call needs Deno plus a live LM; SKIP_LIVE_TESTS=1
-# (run_all_tests.py --fast) skips it instead of failing.
-LIVE_TESTS = {"test_live_rlm_call"}
-
-
 def main():
-    skip_live = not live_tests_enabled() or not _deno_available()
-
     print("=" * 60)
     print("Chapter 8 Tests: The Infinite Improbability Context")
     print("DSPy: The Mostly Harmless Guide")
     print("=" * 60)
     print(f"\nDeno available: {'yes' if _deno_available() else 'no (live test will skip)'}")
-    print(f"API key set:    {'yes' if _api_key_available() else 'no (live test will skip)'}")
+    print(f"API key set:    {'yes' if api_key_available() else 'no (live test will skip)'}")
     print()
 
+    # test_live_rlm_call carries both gates (@live_test + Deno), so the
+    # chapter runner and pytest agree.
     tests = [
         # Tier 1: structure
         test_contract_risk_schema,
@@ -303,31 +294,7 @@ def main():
         test_live_rlm_call,
     ]
 
-    passed = 0
-    failed = 0
-    skipped = 0
-
-    for test in tests:
-        if skip_live and test.__name__ in LIVE_TESTS:
-            print(f"  SKIPPED (live RLM): {test.__name__}")
-            skipped += 1
-            continue
-        try:
-            test()
-            passed += 1
-        except AssertionError as e:
-            print(f"  FAILED: {e}")
-            failed += 1
-        except Exception as e:
-            print(f"  ERROR: {type(e).__name__}: {e}")
-            failed += 1
-
-    print(f"\n{'='*60}")
-    print(f"Results: {passed}/{len(tests)} passed, {failed} failed, {skipped} skipped")
-    print(f"{'='*60}")
-
-    if failed > 0:
-        sys.exit(1)
+    run_tests(tests)
 
 
 if __name__ == "__main__":

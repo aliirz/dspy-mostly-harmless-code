@@ -16,8 +16,11 @@ through chapter_test_support.py, so "skipped" is reported separately from
 a real key in the environment cannot re-enable paid calls under --fast.
 
 Before any chapter runs, the harness runs test_offline_policy.py, which fails
-if a chapter ignores SKIP_LIVE_TESTS, if a chapter test file is missing from the
-registry below, or if an offline run reaches the network.
+if a chapter ignores SKIP_LIVE_TESTS, if a key for one provider unlocks another
+provider's live test, if a chapter test file is missing from the registry below,
+or if an offline run reaches the network. --fast additionally installs the
+socket-level guard (offline_guard/) so a forgotten marker fails loudly rather
+than dialling out.
 
 Requirements:
     pip install dspy-ai python-dotenv fastapi uvicorn Pillow requests pytest
@@ -125,6 +128,15 @@ def run_chapter(chapter: dict, code_root: Path, fast: bool = False) -> dict:
         # tests. No -k expression is involved, so a real API key in the
         # environment cannot turn a --fast run into a paid run.
         env["SKIP_LIVE_TESTS"] = "1"
+        # Belt and braces: --fast also installs the socket-level offline guard
+        # (offline_guard/sitecustomize.py) for the chapter process, so a live
+        # test that forgets its marker fails loudly here instead of reaching
+        # api.openai.com or a web API.
+        guard_dir = str(Path(__file__).resolve().parent / "offline_guard")
+        env["PYTHONPATH"] = (
+            guard_dir + os.pathsep + env["PYTHONPATH"]
+            if env.get("PYTHONPATH") else guard_dir
+        )
 
     outputs = []
     summaries = []

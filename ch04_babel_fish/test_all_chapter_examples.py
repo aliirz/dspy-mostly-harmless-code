@@ -19,7 +19,7 @@ from pydantic import ValidationError
 
 # Shared live/offline policy (repo root); see chapter_test_support.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from chapter_test_support import live_tests_enabled  # noqa: E402
+from chapter_test_support import live_test, run_tests  # noqa: E402
 
 from ticket_classifier import (
     TicketClassification, ClassifyTicket, TicketClassifier,
@@ -88,8 +88,7 @@ def test_pydantic_model():
             routing="test",
             reasoning="test",
         )
-        print("  FAILED: Should have rejected invalid category")
-        return False
+        raise AssertionError("Should have rejected category='invalid_category'")
     except ValidationError:
         print("  Literal validation: rejects invalid categories")
 
@@ -101,8 +100,7 @@ def test_pydantic_model():
             routing="test",
             reasoning="test",
         )
-        print("  FAILED: Should have rejected invalid priority")
-        return False
+        raise AssertionError("Should have rejected priority='urgent'")
     except ValidationError:
         print("  Literal validation: rejects invalid priorities")
 
@@ -187,6 +185,7 @@ def test_metric():
 # ============================================================
 # EXAMPLE 5: Baseline classifier (live LM)
 # ============================================================
+@live_test()
 def test_baseline():
     """Test the unoptimized classifier with live API."""
     print("TEST: Baseline TicketClassifier...")
@@ -212,6 +211,7 @@ def test_baseline():
 # ============================================================
 # EXAMPLE 6: dspy.Evaluate with baseline
 # ============================================================
+@live_test()
 def test_evaluate_baseline():
     """Test dspy.Evaluate on the baseline classifier."""
     print("TEST: Evaluate baseline...")
@@ -234,6 +234,7 @@ def test_evaluate_baseline():
 # ============================================================
 # EXAMPLE 7: LabeledFewShot optimizer
 # ============================================================
+@live_test()
 def test_labeled_few_shot():
     """Test LabeledFewShot optimizer."""
     print("TEST: LabeledFewShot optimizer...")
@@ -271,6 +272,7 @@ def test_labeled_few_shot():
 # ============================================================
 # EXAMPLE 8: BootstrapFewShot optimizer
 # ============================================================
+@live_test()
 def test_bootstrap_few_shot():
     """Test BootstrapFewShot optimizer."""
     print("TEST: BootstrapFewShot optimizer...")
@@ -312,6 +314,7 @@ def test_bootstrap_few_shot():
 # ============================================================
 # EXAMPLE 9: MIPROv2 optimizer
 # ============================================================
+@live_test()
 def test_mipro_v2():
     """Test MIPROv2 optimizer with auto=light."""
     print("TEST: MIPROv2 optimizer (auto=light)...")
@@ -355,6 +358,7 @@ def test_mipro_v2():
 # ============================================================
 # EXAMPLE 10: Save and load optimized program
 # ============================================================
+@live_test()
 def test_save_load():
     """Test saving and loading an optimized classifier."""
     print("TEST: Save and Load optimized program...")
@@ -400,6 +404,7 @@ def test_save_load():
 # ============================================================
 # EXAMPLE 11: SIMBA optimizer
 # ============================================================
+@live_test()
 def test_simba():
     """Test SIMBA optimizer."""
     print("TEST: SIMBA optimizer...")
@@ -441,6 +446,7 @@ def test_simba():
 # ============================================================
 # EXAMPLE 12: BootstrapFewShotWithRandomSearch
 # ============================================================
+@live_test()
 def test_bootstrap_random_search():
     """Test BootstrapFewShotWithRandomSearch optimizer."""
     print("TEST: BootstrapFewShotWithRandomSearch...")
@@ -480,32 +486,15 @@ def test_bootstrap_random_search():
 # ============================================================
 # MAIN
 # ============================================================
-# ---------------------------------------------------------------------------
-# Live-test classification
-# ---------------------------------------------------------------------------
-# Tests in this set call a live LM. SKIP_LIVE_TESTS=1 (what
-# run_all_tests.py --fast sets) skips them rather than failing with no key.
-LIVE_TESTS = {
-    "test_baseline",
-    "test_evaluate_baseline",
-    "test_labeled_few_shot",
-    "test_bootstrap_few_shot",
-    "test_mipro_v2",
-    "test_save_load",
-    "test_simba",
-    "test_bootstrap_random_search",
-}
-
-
 def main():
-    skip_live = not live_tests_enabled()
-
     print("=" * 60)
     print("Chapter 4: EVERY Code Example Tested")
     print("DSPy: The Mostly Harmless Guide")
     print("=" * 60)
     print()
 
+    # The eight optimizer/model examples are marked @live_test(); the
+    # structural ones always run.
     tests = [
         test_dataset,
         test_pydantic_model,
@@ -521,35 +510,7 @@ def main():
         test_bootstrap_random_search,
     ]
 
-    passed = 0
-    failed = 0
-    skipped = 0
-
-    for test in tests:
-        if skip_live and test.__name__ in LIVE_TESTS:
-            print(f"  SKIPPED (live API): {test.__name__}")
-            skipped += 1
-            continue
-        try:
-            result = test()
-            if result is not False:
-                passed += 1
-            else:
-                failed += 1
-        except AssertionError as e:
-            print(f"  FAILED: {e}")
-            failed += 1
-        except Exception as e:
-            print(f"  ERROR: {type(e).__name__}: {e}")
-            failed += 1
-        print()
-
-    print("=" * 60)
-    print(f"Results: {passed}/{len(tests)} passed, {failed} failed, {skipped} skipped")
-    print("=" * 60)
-
-    if failed > 0:
-        sys.exit(1)
+    run_tests(tests)
 
 
 if __name__ == "__main__":
