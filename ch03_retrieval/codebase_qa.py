@@ -89,9 +89,11 @@ def chunk_code_files(files, chunk_size=30, overlap=5):
 def get_embedder():
     """Create the embedder — hosted model by default, local fallback.
 
-    Uses OpenAI text-embedding-3-small via LiteLLM for best retrieval
-    quality. Falls back to a local hash-based embedder if no OpenAI
-    key is available.
+    Uses OpenAI text-embedding-3-small through DSPy's OpenAI embedding
+    client (the OpenAI SDK directly; dspy.Embedder accepts only bare
+    OpenAI names, 'openai/<model>' and 'azure/<deployment>', and asks for
+    a callable otherwise). Falls back to a local hash-based embedder if no
+    OpenAI key is available.
     """
     if os.getenv("OPENAI_API_KEY"):
         return dspy.Embedder(
@@ -248,8 +250,8 @@ CODEBASE_QA_DATASET = [
     dspy.Example(
         question="How does ChainOfThought differ from Predict?",
         answer="ChainOfThought extends Predict by adding a reasoning field. "
-        "It uses an extended signature that includes step-by-step reasoning "
-        "before the final answer."
+        "In DSPy 3.5 that field is typed dspy.Reasoning: it carries the model's "
+        "native thinking when available, else a short plan, and may be None."
     ).with_inputs("question"),
 
     dspy.Example(
@@ -268,16 +270,17 @@ CODEBASE_QA_DATASET = [
 
     dspy.Example(
         question="What is the role of adapters in DSPy?",
-        answer="Adapters format signatures into LM prompts. ChatAdapter "
-        "is the default. JSONAdapter forces JSON output. The adapter "
-        "also handles parsing LM responses back into structured output."
+        answer="Adapters format signatures into LM prompts. XMLAdapter "
+        "is the default as of DSPy 3.5; ChatAdapter and JSONAdapter are "
+        "still available. The adapter also parses LM responses back into "
+        "structured output."
     ).with_inputs("question"),
 
     dspy.Example(
         question="How does DSPy handle saving and loading programs?",
         answer="DSPy programs can be saved and loaded to preserve optimized "
-        "state. The Embeddings class has save() and from_saved() methods "
-        "for persisting retrieval indices to disk."
+        "state. The Embeddings class has save() and load() methods for "
+        "persisting retrieval indices to disk."
     ).with_inputs("question"),
 ]
 

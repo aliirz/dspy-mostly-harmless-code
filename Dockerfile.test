@@ -1,0 +1,30 @@
+# Container recipe for the whole book test suite.
+#
+#   docker build -f Dockerfile.test -t harmless-code-tests .
+#   docker run --rm harmless-code-tests
+#
+# The default CMD is the offline run: SKIP_LIVE_TESTS=1 makes every chapter
+# skip its live tests (no provider keys exist in the image), and --fast also
+# installs offline_guard/ so a forgotten marker fails loudly instead of dialling
+# out. Drop the env var to run live tests with keys passed in at `docker run`.
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /book
+
+# Dependencies are installed at build time (the runner has package-registry
+# access while building but no general runtime network).
+COPY requirements-test.txt /tmp/requirements-test.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-test.txt
+
+COPY . /book
+
+# ch03 reads the DSPy source tree from DSPY_REPO_PATH. Point it at the installed
+# dspy package so the codebase-Q&A tests load real files instead of skipping.
+RUN ln -s "$(python -c 'import os, dspy; print(os.path.dirname(dspy.__file__))')" /dspy-src
+ENV DSPY_REPO_PATH=/dspy-src
+
+CMD ["sh", "-c", "SKIP_LIVE_TESTS=1 python run_all_tests.py --fast"]

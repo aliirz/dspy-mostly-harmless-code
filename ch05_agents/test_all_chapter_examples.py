@@ -33,7 +33,16 @@ from research_agent import (
     QuickAnswer, fact_check_reward, review_quality_reward, answer_quality_reward,
 )
 
-API_KEY = os.getenv("ANTHROPIC_API_KEY")
+# Shared live/offline policy (repo root); see chapter_test_support.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from chapter_test_support import (  # noqa: E402
+    api_key_available,
+    live_test,
+    offline_mode,
+    run_tests,
+    skip_test_unless,
+    skip_test_when,
+)
 
 
 def setup_lm():
@@ -43,7 +52,15 @@ def setup_lm():
 
 
 def network_available():
-    """Check if we can reach external APIs."""
+    """Check if we can reach external APIs.
+
+    An offline run must not dial out even to find out whether it could: the
+    flag answers the question, so importing this module never touches the
+    network (with the socket guard on, a request here would be an error the
+    broad `except` below would silently swallow).
+    """
+    if offline_mode():
+        return False
     import requests
     try:
         requests.get("https://api.github.com", timeout=5)
@@ -171,7 +188,9 @@ def test_fact_checker_construction():
     assert "search_web" in tools, "Should have search_web tool"
     assert "fetch_webpage" in tools, "Should have fetch_webpage tool"
     assert "get_wikipedia_summary" in tools, "Should have get_wikipedia_summary tool"
-    assert "finish" in tools, "Should have auto-added 'finish' tool"
+    # DSPy 3.5's ReAct adds a "submit" tool to signal completion; older
+    # releases called the same auto-added tool "finish".
+    assert "submit" in tools, "Should have auto-added 'submit' tool"
 
     print("  PASSED: FactChecker constructed correctly")
 
@@ -188,7 +207,7 @@ def test_code_reviewer_construction():
     assert "read_github_file" in tools
     assert "get_recent_pull_requests" in tools
     assert "get_pr_diff" in tools
-    assert "finish" in tools
+    assert "submit" in tools
 
     print("  PASSED: CodeReviewer constructed correctly")
 
@@ -290,11 +309,10 @@ def test_save_load_agents():
 # TOOL TESTS (need network, no API key)
 # ═══════════════════════════════════════════════════════════════════════════
 
+@skip_test_when(offline_mode, "SKIP_LIVE_TESTS is set: offline run, no network")
+@skip_test_unless(lambda: HAS_NETWORK, "no network access (this test calls a live web API)")
 def test_search_web_live():
     """Verify search_web returns real results."""
-    if not HAS_NETWORK:
-        print("TEST 9: search_web live... SKIPPED (no network)")
-        return
     print("TEST 9: search_web live...")
 
     results = search_web("Python programming language")
@@ -305,11 +323,10 @@ def test_search_web_live():
     print("  PASSED: search_web returns real results")
 
 
+@skip_test_when(offline_mode, "SKIP_LIVE_TESTS is set: offline run, no network")
+@skip_test_unless(lambda: HAS_NETWORK, "no network access (this test calls a live web API)")
 def test_fetch_webpage_live():
     """Verify fetch_webpage extracts text from a real URL."""
-    if not HAS_NETWORK:
-        print("TEST 10: fetch_webpage live... SKIPPED (no network)")
-        return
     print("TEST 10: fetch_webpage live...")
 
     content = fetch_webpage("https://en.wikipedia.org/wiki/Python_(programming_language)")
@@ -321,11 +338,10 @@ def test_fetch_webpage_live():
     print("  PASSED: fetch_webpage extracts real content")
 
 
+@skip_test_when(offline_mode, "SKIP_LIVE_TESTS is set: offline run, no network")
+@skip_test_unless(lambda: HAS_NETWORK, "no network access (this test calls a live web API)")
 def test_wikipedia_summary_live():
     """Verify get_wikipedia_summary returns real data."""
-    if not HAS_NETWORK:
-        print("TEST 11: get_wikipedia_summary live... SKIPPED (no network)")
-        return
     print("TEST 11: get_wikipedia_summary live...")
 
     summary = get_wikipedia_summary("Python (programming language)")
@@ -337,11 +353,10 @@ def test_wikipedia_summary_live():
     print("  PASSED: Wikipedia summary works")
 
 
+@skip_test_when(offline_mode, "SKIP_LIVE_TESTS is set: offline run, no network")
+@skip_test_unless(lambda: HAS_NETWORK, "no network access (this test calls a live web API)")
 def test_github_repo_info_live():
     """Verify get_repo_info returns real GitHub data."""
-    if not HAS_NETWORK:
-        print("TEST 12: get_repo_info live... SKIPPED (no network)")
-        return
     print("TEST 12: get_repo_info live...")
 
     info = get_repo_info("stanfordnlp/dspy")
@@ -353,11 +368,10 @@ def test_github_repo_info_live():
     print("  PASSED: GitHub repo info works")
 
 
+@skip_test_when(offline_mode, "SKIP_LIVE_TESTS is set: offline run, no network")
+@skip_test_unless(lambda: HAS_NETWORK, "no network access (this test calls a live web API)")
 def test_github_list_files_live():
     """Verify list_repo_files returns real directory listings."""
-    if not HAS_NETWORK:
-        print("TEST 13: list_repo_files live... SKIPPED (no network)")
-        return
     print("TEST 13: list_repo_files live...")
 
     listing = list_repo_files("stanfordnlp/dspy", "dspy/predict")
@@ -368,11 +382,10 @@ def test_github_list_files_live():
     print("  PASSED: GitHub file listing works")
 
 
+@skip_test_when(offline_mode, "SKIP_LIVE_TESTS is set: offline run, no network")
+@skip_test_unless(lambda: HAS_NETWORK, "no network access (this test calls a live web API)")
 def test_github_read_file_live():
     """Verify read_github_file returns real file content."""
-    if not HAS_NETWORK:
-        print("TEST 14: read_github_file live... SKIPPED (no network)")
-        return
     print("TEST 14: read_github_file live...")
 
     content = read_github_file("stanfordnlp/dspy", "dspy/predict/react.py")
@@ -383,11 +396,10 @@ def test_github_read_file_live():
     print("  PASSED: GitHub file reading works")
 
 
+@skip_test_when(offline_mode, "SKIP_LIVE_TESTS is set: offline run, no network")
+@skip_test_unless(lambda: HAS_NETWORK, "no network access (this test calls a live web API)")
 def test_github_prs_live():
     """Verify get_recent_pull_requests returns real PRs."""
-    if not HAS_NETWORK:
-        print("TEST 15: get_recent_pull_requests live... SKIPPED (no network)")
-        return
     print("TEST 15: get_recent_pull_requests live...")
 
     prs = get_recent_pull_requests("stanfordnlp/dspy")
@@ -402,14 +414,10 @@ def test_github_prs_live():
 # LIVE AGENT TESTS (need network + API key)
 # ═══════════════════════════════════════════════════════════════════════════
 
+@live_test()
+@skip_test_unless(lambda: HAS_NETWORK, "no network access (this test calls a live web API)")
 def test_fact_checker_live():
     """Run the Fact-Checker agent with real web search and Claude."""
-    if not API_KEY:
-        print("TEST 16: FactChecker live... SKIPPED (no ANTHROPIC_API_KEY)")
-        return
-    if not HAS_NETWORK:
-        print("TEST 16: FactChecker live... SKIPPED (no network)")
-        return
     print("TEST 16: FactChecker live run (waiting 60s for rate limit)...")
     time.sleep(60)
     setup_lm()
@@ -423,23 +431,21 @@ def test_fact_checker_live():
     assert len(v.evidence) >= 1, "Should have at least 1 source"
     assert len(v.explanation.split()) >= 5, "Explanation should be substantive"
 
-    trajectory = result.trajectory
-    assert len(trajectory) > 0, "Agent should have a trajectory"
+    # DSPy 3.5 removed the `trajectory` attribute; ReAct now reports its
+    # full conversation in `history.messages` plus a `termination_reason`.
+    history = result.history.messages
+    assert len(history) > 0, "Agent should have a conversation history"
 
     print(f"  Verdict: {v.verdict} (confidence: {v.confidence})")
     print(f"  Evidence sources: {len(v.evidence)}")
-    print(f"  Trajectory steps: {len(trajectory)}")
+    print(f"  Trajectory steps: {len(history)} (terminated: {result.termination_reason})")
     print("  PASSED: FactChecker produced valid verdict")
 
 
+@live_test()
+@skip_test_unless(lambda: HAS_NETWORK, "no network access (this test calls a live web API)")
 def test_code_reviewer_live():
     """Run the Code Reviewer agent with real GitHub API and Claude."""
-    if not API_KEY:
-        print("TEST 17: CodeReviewer live... SKIPPED (no ANTHROPIC_API_KEY)")
-        return
-    if not HAS_NETWORK:
-        print("TEST 17: CodeReviewer live... SKIPPED (no network)")
-        return
     print("TEST 17: CodeReviewer live run (waiting 60s for rate limit)...")
     time.sleep(60)  # Respect Anthropic rate limits between heavy agent runs
     setup_lm()
@@ -456,21 +462,20 @@ def test_code_reviewer_live():
     assert len(r.strengths) >= 1, "Should identify at least 1 strength"
     assert r.verdict in ("approve", "request changes", "needs discussion")
 
-    trajectory = result.trajectory
-    assert len(trajectory) > 0
+    history = result.history.messages
+    assert len(history) > 0
 
     print(f"  Repo: {r.repo_name}")
     print(f"  Verdict: {r.verdict}")
     print(f"  Review items: {len(r.review_items)}")
-    print(f"  Trajectory steps: {len(trajectory)}")
+    print(f"  Trajectory steps: {len(history)} (terminated: {result.termination_reason})")
     print("  PASSED: CodeReviewer produced valid review")
 
 
+@live_test()
+@skip_test_unless(lambda: HAS_NETWORK, "no network access (this test calls a live web API)")
 def test_best_of_n_live():
     """Test BestOfN with a live API call."""
-    if not API_KEY:
-        print("TEST 18: BestOfN... SKIPPED (no ANTHROPIC_API_KEY)")
-        return
     print("TEST 18: BestOfN live run (waiting 30s for rate limit)...")
     time.sleep(30)
     setup_lm()
@@ -491,11 +496,10 @@ def test_best_of_n_live():
     print("  PASSED: BestOfN produced quality answer")
 
 
+@live_test()
+@skip_test_unless(lambda: HAS_NETWORK, "no network access (this test calls a live web API)")
 def test_refine_live():
     """Test Refine with a live API call."""
-    if not API_KEY:
-        print("TEST 19: Refine... SKIPPED (no ANTHROPIC_API_KEY)")
-        return
     print("TEST 19: Refine live run (waiting 30s for rate limit)...")
     time.sleep(30)
     setup_lm()
@@ -515,14 +519,10 @@ def test_refine_live():
     print("  PASSED: Refine produced quality answer")
 
 
+@live_test()
+@skip_test_unless(lambda: HAS_NETWORK, "no network access (this test calls a live web API)")
 def test_react_inline_signature_live():
     """Test ReAct with a simple inline signature and web tools."""
-    if not API_KEY:
-        print("TEST 20: ReAct inline... SKIPPED (no ANTHROPIC_API_KEY)")
-        return
-    if not HAS_NETWORK:
-        print("TEST 20: ReAct inline... SKIPPED (no network)")
-        return
     print("TEST 20: ReAct with inline signature (waiting 30s for rate limit)...")
     time.sleep(30)
     setup_lm()
@@ -550,9 +550,11 @@ def main():
     print("DSPy: The Mostly Harmless Guide")
     print("=" * 60)
     print(f"  Network: {'available' if HAS_NETWORK else 'unavailable'}")
-    print(f"  API Key: {'set' if API_KEY else 'not set'}")
+    print(f"  Live tests: {'enabled' if api_key_available() and not offline_mode() else 'skipped (offline or no key)'}")
     print()
 
+    # Each network/live test carries its own gates, so pytest and this runner
+    # agree on what actually ran.
     tests = [
         # Structural (always run)
         test_dspy_tool_creation,
@@ -571,7 +573,7 @@ def main():
         test_github_list_files_live,
         test_github_read_file_live,
         test_github_prs_live,
-        # Agent tests (need network + API key)
+        # Agent tests (need network + key)
         test_fact_checker_live,
         test_code_reviewer_live,
         test_best_of_n_live,
@@ -579,26 +581,7 @@ def main():
         test_react_inline_signature_live,
     ]
 
-    passed = 0
-    failed = 0
-
-    for test in tests:
-        try:
-            test()
-            passed += 1
-        except AssertionError as e:
-            print(f"  FAILED: {e}")
-            failed += 1
-        except Exception as e:
-            print(f"  ERROR: {type(e).__name__}: {e}")
-            failed += 1
-
-    print(f"\n{'='*60}")
-    print(f"Results: {passed}/{passed + failed} passed, {failed} failed")
-    print(f"{'='*60}")
-
-    if failed > 0:
-        sys.exit(1)
+    run_tests(tests)
 
 
 if __name__ == "__main__":

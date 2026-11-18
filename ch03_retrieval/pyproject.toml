@@ -5,8 +5,8 @@ description = "Chapter 3: Life, the Universe, and Retrieval"
 authors = ["Ali Raza <ali@botterfly.app>"]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.15"
-dspy = {version = ">=3.3.1,<4.0.0", extras = ["numpy"]}
+python = ">=3.10,<3.16"
+dspy = {version = "3.5.0", extras = ["litellm", "numpy", "openai"]}
 python-dotenv = ">=1.2.2,<2.0.0"
 openai = "^2.28.0"
 

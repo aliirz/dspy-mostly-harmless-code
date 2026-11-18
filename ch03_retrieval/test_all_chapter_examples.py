@@ -16,6 +16,17 @@ load_dotenv()
 
 import numpy as np
 import dspy
+
+# Shared live/offline policy (repo root); see chapter_test_support.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from chapter_test_support import (  # noqa: E402
+    api_key_available,
+    live_test,
+    offline_mode,
+    run_tests,
+    skip_test_unless,
+    skip_test_when,
+)
 from pydantic import BaseModel, Field, ValidationError
 from typing import Literal
 
@@ -26,10 +37,12 @@ from codebase_qa import (
     answer_quality_metric, CODEBASE_QA_DATASET,
 )
 
-API_KEY = os.getenv("ANTHROPIC_API_KEY")
-
-# Path to the DSPy source code
-REPO_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "dspy", "dspy")
+# Path to the DSPy source code. Same convention as codebase_qa.main(): an
+# explicit DSPY_REPO_PATH wins, otherwise the checkout cloned beside this repo.
+REPO_PATH = os.environ.get(
+    "DSPY_REPO_PATH",
+    os.path.join(os.path.dirname(__file__), "..", "..", "dspy", "dspy"),
+)
 
 # Global state: loaded once, reused across tests
 _files = None
@@ -79,6 +92,7 @@ def setup_lm():
 # ============================================================
 # EXAMPLE 1: load_codebase — loads files from a repo
 # ============================================================
+@skip_test_unless(lambda: os.path.isdir(REPO_PATH), "needs the DSPy source tree (set DSPY_REPO_PATH or clone dspy beside this repo)")
 def test_load_codebase():
     """Test loading source files from the DSPy repo."""
     print("TEST: load_codebase...")
@@ -106,6 +120,7 @@ def test_load_codebase():
 # ============================================================
 # EXAMPLE 2: chunk_code_files — splits files into chunks
 # ============================================================
+@skip_test_unless(lambda: os.path.isdir(REPO_PATH), "needs the DSPy source tree (set DSPY_REPO_PATH or clone dspy beside this repo)")
 def test_chunk_code_files():
     """Test chunking source files into overlapping windows."""
     print("TEST: chunk_code_files...")
@@ -173,6 +188,7 @@ def test_tfidf_embedder():
 # ============================================================
 # EXAMPLE 4: dspy.Embeddings — basic retrieval (tfidf)
 # ============================================================
+@skip_test_unless(lambda: os.path.isdir(REPO_PATH), "needs the DSPy source tree (set DSPY_REPO_PATH or clone dspy beside this repo)")
 def test_embeddings_retrieval():
     """Test dspy.Embeddings with real codebase chunks."""
     print("TEST: dspy.Embeddings with codebase (tfidf)...")
@@ -196,13 +212,10 @@ def test_embeddings_retrieval():
 # ============================================================
 # EXAMPLE 5: OpenAI Embedder — hosted model retrieval
 # ============================================================
+@live_test("openai")
 def test_openai_embedder():
     """Test dspy.Embedder with OpenAI text-embedding-3-small."""
     print("TEST: OpenAI text-embedding-3-small embedder...")
-
-    if not os.getenv("OPENAI_API_KEY"):
-        print("  SKIPPED: No OPENAI_API_KEY set")
-        return
 
     # Test the embedder directly
     embedder = dspy.Embedder("openai/text-embedding-3-small", caching=True, batch_size=200)
@@ -230,6 +243,7 @@ def test_openai_embedder():
 # ============================================================
 # EXAMPLE 6: dspy.Embedder wrapper
 # ============================================================
+@skip_test_unless(lambda: os.path.isdir(REPO_PATH), "needs the DSPy source tree (set DSPY_REPO_PATH or clone dspy beside this repo)")
 def test_embedder_wrapper():
     """Test dspy.Embedder wrapping custom function."""
     print("TEST: dspy.Embedder wrapper...")
@@ -304,6 +318,7 @@ def test_signature_fields():
 # ============================================================
 # EXAMPLE 9: CodebaseQA — simple RAG with live LM
 # ============================================================
+@live_test()
 def test_codebase_qa():
     """Test the simple RAG module with live API."""
     print("TEST: CodebaseQA simple RAG...")
@@ -321,6 +336,7 @@ def test_codebase_qa():
 # ============================================================
 # EXAMPLE 10: CodebaseExplorer — full citations with live LM
 # ============================================================
+@live_test()
 def test_codebase_explorer():
     """Test the full explorer with citations."""
     print("TEST: CodebaseExplorer with citations...")
@@ -348,13 +364,11 @@ def test_codebase_explorer():
 # ============================================================
 # EXAMPLE 11: CodebaseExplorer with OpenAI embedder
 # ============================================================
+@live_test("openai")
+@live_test("anthropic")
 def test_codebase_explorer_openai():
-    """Test the full explorer using OpenAI embeddings."""
+    """Test the full explorer using OpenAI embeddings (needs both keys)."""
     print("TEST: CodebaseExplorer with OpenAI embedder...")
-
-    if not os.getenv("OPENAI_API_KEY"):
-        print("  SKIPPED: No OPENAI_API_KEY set")
-        return
 
     setup_lm()
     explorer = CodebaseExplorer(retriever=get_openai_retriever())
@@ -417,6 +431,7 @@ def test_metric():
 # ============================================================
 # EXAMPLE 13: dspy.Evaluate
 # ============================================================
+@live_test()
 def test_evaluate():
     """Test dspy.Evaluate with our metric and dataset."""
     print("TEST: dspy.Evaluate...")
@@ -439,6 +454,7 @@ def test_evaluate():
 # ============================================================
 # EXAMPLE 14: Save and Load retriever
 # ============================================================
+@skip_test_unless(lambda: os.path.isdir(REPO_PATH), "needs the DSPy source tree (set DSPY_REPO_PATH or clone dspy beside this repo)")
 def test_save_load():
     """Test saving and loading an Embeddings index."""
     print("TEST: Save and Load retriever...")
@@ -453,8 +469,11 @@ def test_save_load():
     assert os.path.exists(os.path.join(save_path, "corpus_embeddings.npy"))
     print("  Saved index to disk")
 
-    # Load
-    loaded = dspy.Embeddings.from_saved(save_path, embedder=tfidf_embedder)
+    # Load — DSPy 3.5 offers both: load() fills an existing Embeddings instance
+    # in place, and Embeddings.from_saved(path, embedder) builds a fresh one
+    # without recomputing corpus embeddings.
+    loaded = dspy.Embeddings(embedder=tfidf_embedder, corpus=small_corpus, k=3)
+    loaded.load(save_path, embedder=tfidf_embedder)
     result = loaded("What is a Signature?")
     assert len(result.passages) == 3
     assert all(isinstance(p, str) for p in result.passages)
@@ -473,6 +492,11 @@ def test_save_load():
 # ============================================================
 # EXAMPLE 15: get_embedder — the smart default
 # ============================================================
+@skip_test_when(
+    offline_mode,
+    "SKIP_LIVE_TESTS is set: get_embedder() reaches the hosted OpenAI "
+    "backend when OPENAI_API_KEY is present",
+)
 def test_get_embedder():
     """Test the get_embedder() function picks the right backend."""
     print("TEST: get_embedder()...")
@@ -500,23 +524,16 @@ def test_get_embedder():
 # MAIN
 # ============================================================
 def main():
-    if not API_KEY:
-        print("ERROR: ANTHROPIC_API_KEY not set. Most tests require live API.")
-        sys.exit(1)
-
-    if not os.path.isdir(REPO_PATH):
-        print(f"ERROR: DSPy source not found at {REPO_PATH}")
-        print("Clone the DSPy repo or set DSPY_REPO_PATH.")
-        sys.exit(1)
-
     print("=" * 60)
     print("Chapter 3: EVERY Code Example Tested")
     print("DSPy: The Mostly Harmless Guide")
     print("=" * 60)
     print(f"Repo path: {os.path.abspath(REPO_PATH)}")
-    print(f"OPENAI_API_KEY: {'set' if os.getenv('OPENAI_API_KEY') else 'NOT SET'}")
+    print(f"OPENAI_API_KEY: {'set' if api_key_available('openai') else 'NOT SET'}")
     print()
 
+    # Every gate lives on the test itself (@live_test / @skip_test_unless), so
+    # this list is the same under the chapter runner and under pytest.
     tests = [
         test_load_codebase,
         test_chunk_code_files,
@@ -535,30 +552,7 @@ def main():
         test_save_load,
     ]
 
-    passed = 0
-    failed = 0
-
-    for test in tests:
-        try:
-            result = test()
-            if result is not False:
-                passed += 1
-            else:
-                failed += 1
-        except AssertionError as e:
-            print(f"  FAILED: {e}")
-            failed += 1
-        except Exception as e:
-            print(f"  ERROR: {type(e).__name__}: {e}")
-            failed += 1
-        print()
-
-    print("=" * 60)
-    print(f"Results: {passed}/{len(tests)} passed, {failed} failed")
-    print("=" * 60)
-
-    if failed > 0:
-        sys.exit(1)
+    run_tests(tests)
 
 
 if __name__ == "__main__":

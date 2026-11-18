@@ -36,17 +36,25 @@ DOCS_CORPUS = [
     "The two most common modules are dspy.Predict and dspy.ChainOfThought.",
 
     "dspy.Predict is the simplest module. It takes a signature and calls the language model once. "
-    "dspy.ChainOfThought extends Predict by asking the model to show its reasoning step-by-step "
-    "before producing the final answer. ChainOfThought is better for complex reasoning tasks.",
+    "dspy.ChainOfThought extends Predict with a 'reasoning' output field, which asks the model to "
+    "think before answering. ChainOfThought is better for complex reasoning tasks.",
 
-    "dspy.ChainOfThought adds a 'reasoning' field to the output automatically. This field "
-    "contains the model's step-by-step thought process. You don't need to define it in your "
-    "signature — DSPy injects it for you. Access it via result.reasoning.",
+    "Inside a dspy.ChainOfThought, the injected 'reasoning' field is typed "
+    "dspy.Reasoning: it holds the model's native thinking when the provider exposes it, and "
+    "otherwise DSPy asks for a short plan. It can be None, so treat it as optional. Access it "
+    "via result.reasoning; set rationale_field_type=str if you want a plain string instead.",
 
     # Configuration
-    "dspy.LM creates a language model connection. It accepts any model string supported by "
-    "LiteLLM, like 'anthropic/claude-sonnet-5' or 'openai/gpt-5.6'. Parameters include "
-    "temperature, max_tokens, and stop sequences. Configure globally with dspy.configure(lm=lm).",
+    "dspy.LM creates a language model connection. It accepts provider-prefixed model strings "
+    "like 'anthropic/claude-sonnet-5' or 'openai/gpt-5.6'. The default engine='auto' picks "
+    "DSPy's native adapter for models in its built-in registry — Anthropic models go to the "
+    "native Anthropic client, OpenAI models to the native OpenAI client, Gemini and the "
+    "OpenAI-compatible vendors to theirs — so those calls need no extra. LiteLLM is the "
+    "compatibility fallback for models the registry does not know and for provider options "
+    "the native engine has no verdict for; it ships as the optional extra dspy[litellm]. "
+    "Parameters "
+    "include temperature, max_tokens, and stop sequences. Configure globally with "
+    "dspy.configure(lm=lm).",
 
     "dspy.configure() sets global defaults for LM, adapter, and retrieval model. "
     "Use dspy.context(lm=other_lm) as a context manager to temporarily switch models "
@@ -54,9 +62,11 @@ DOCS_CORPUS = [
     "for different steps in a pipeline.",
 
     # Adapters
-    "DSPy adapters control how signatures are formatted into LM prompts. ChatAdapter is the "
-    "default and works well with most models. JSONAdapter forces JSON output format, which "
-    "is useful for models that support structured output natively. XMLAdapter uses XML tags.",
+    "DSPy adapters control how signatures are formatted into LM prompts. As of DSPy 3.5 "
+    "XMLAdapter is the default — specifically XMLAdapter(use_native_function_calling=True), "
+    "which uses the provider's tool-calling API when it exists. ChatAdapter is the older "
+    "delimiter format and still works well with most models. JSONAdapter forces JSON output, "
+    "which is useful for models that support structured output natively.",
 
     "When ChatAdapter fails to parse output, it automatically falls back to JSONAdapter. "
     "You can disable this with adapter.use_json_adapter_fallback = False. This is useful "
@@ -78,11 +88,13 @@ DOCS_CORPUS = [
 
     "The embedder parameter in dspy.Embeddings can be a hosted model string like "
     "'openai/text-embedding-3-small' or a custom callable that takes a list of strings and "
-    "returns a numpy array of embeddings. Custom embedders must produce consistent dimensions.",
+    "returns a numpy array of embeddings. Custom embedders must produce consistent dimensions. "
+    "Vector search needs numpy, so install the dspy[numpy] extra.",
 
-    "dspy.Embedder wraps embedding functions into a consistent interface. It handles batching, "
-    "normalization, and caching. Use dspy.Embedder(model_name) for hosted models or "
-    "dspy.Embedder(your_function) for custom embedding functions.",
+    "dspy.Embedder wraps embedding functions into a consistent interface. It handles batching "
+    "and caching. Use dspy.Embedder('openai/text-embedding-3-small') for hosted models — those "
+    "go through the OpenAI SDK, so install the dspy[openai] extra — or dspy.Embedder(your_function) "
+    "for custom embedding functions.",
 
     # Evaluation
     "dspy.Evaluate runs a DSPy program against a dataset and measures performance with a metric. "
@@ -108,8 +120,10 @@ DOCS_CORPUS = [
     "context, the answer will be wrong or hallucinated, no matter how smart the model is.",
 
     "The save() and load() methods on dspy.Embeddings let you persist your index to disk. "
-    "This avoids recomputing embeddings on every startup. Use save(path) after building "
-    "your index and Embeddings.from_saved(path, embedder) to load it back.",
+    "This avoids recomputing embeddings on every startup. save(path) after building your index "
+    "and load(path, embedder) on an Embeddings instance to fill it back in. DSPy 3.5 also keeps "
+    "the Embeddings.from_saved(path, embedder) classmethod, which builds a new instance from a "
+    "saved index without recomputing embeddings — the recommended way to reload one.",
 
     # Common Mistakes
     "A common mistake in RAG systems is chunking documents too aggressively. If your chunks "
@@ -282,14 +296,14 @@ QA_DATASET = [
     dspy.Example(
         question="How do I save and load a retrieval index?",
         answer="Use the save(path) method to persist an Embeddings index to disk, "
-        "and Embeddings.from_saved(path, embedder) to load it back."
+        "then load(path, embedder) on an Embeddings instance to load it back."
     ).with_inputs("question"),
 
     dspy.Example(
         question="What does the adapter do in DSPy?",
         answer="Adapters control how signatures are formatted into LM prompts. "
-        "ChatAdapter is the default, JSONAdapter forces JSON output, "
-        "and XMLAdapter uses XML tags."
+        "XMLAdapter is the default in DSPy 3.5, ChatAdapter uses the older "
+        "[[ ## field ## ]] delimiters, and JSONAdapter forces JSON output."
     ).with_inputs("question"),
 ]
 
