@@ -46,10 +46,15 @@ DOCS_CORPUS = [
 
     # Configuration
     "dspy.LM creates a language model connection. It accepts provider-prefixed model strings "
-    "like 'anthropic/claude-sonnet-5' or 'openai/gpt-5.6'. Anthropic and other third-party "
-    "providers route through LiteLLM, which ships as the optional extra dspy[litellm]; install "
-    "it or the provider call fails. Parameters include temperature, max_tokens, and stop "
-    "sequences. Configure globally with dspy.configure(lm=lm).",
+    "like 'anthropic/claude-sonnet-5' or 'openai/gpt-5.6'. The default engine='auto' picks "
+    "DSPy's native adapter for models in its built-in registry — Anthropic models go to the "
+    "native Anthropic client, OpenAI models to the native OpenAI client, Gemini and the "
+    "OpenAI-compatible vendors to theirs — so those calls need no extra. LiteLLM is the "
+    "compatibility fallback for models the registry does not know and for provider options "
+    "the native engine has no verdict for; it ships as the optional extra dspy[litellm]. "
+    "Parameters "
+    "include temperature, max_tokens, and stop sequences. Configure globally with "
+    "dspy.configure(lm=lm).",
 
     "dspy.configure() sets global defaults for LM, adapter, and retrieval model. "
     "Use dspy.context(lm=other_lm) as a context manager to temporarily switch models "
@@ -116,8 +121,9 @@ DOCS_CORPUS = [
 
     "The save() and load() methods on dspy.Embeddings let you persist your index to disk. "
     "This avoids recomputing embeddings on every startup. save(path) after building your index "
-    "and load(path, embedder) on an Embeddings instance to fill it back in. In DSPy 3.5 the "
-    "older Embeddings.from_saved() classmethod no longer exists.",
+    "and load(path, embedder) on an Embeddings instance to fill it back in. DSPy 3.5 also keeps "
+    "the Embeddings.from_saved(path, embedder) classmethod, which builds a new instance from a "
+    "saved index without recomputing embeddings — the recommended way to reload one.",
 
     # Common Mistakes
     "A common mistake in RAG systems is chunking documents too aggressively. If your chunks "

@@ -89,9 +89,11 @@ def chunk_code_files(files, chunk_size=30, overlap=5):
 def get_embedder():
     """Create the embedder — hosted model by default, local fallback.
 
-    Uses OpenAI text-embedding-3-small via LiteLLM for best retrieval
-    quality. Falls back to a local hash-based embedder if no OpenAI
-    key is available.
+    Uses OpenAI text-embedding-3-small through DSPy's OpenAI embedding
+    client (the OpenAI SDK directly; dspy.Embedder accepts only bare
+    OpenAI names, 'openai/<model>' and 'azure/<deployment>', and asks for
+    a callable otherwise). Falls back to a local hash-based embedder if no
+    OpenAI key is available.
     """
     if os.getenv("OPENAI_API_KEY"):
         return dspy.Embedder(

@@ -40,13 +40,36 @@ python run_all_tests.py          # Full suite (all 8 chapters)
 python run_all_tests.py -c 4     # Just Chapter 4
 python run_all_tests.py --fast   # Offline tests only (live API tests reported as skipped)
 python run_all_tests.py -v       # Full output for debugging
+python run_all_tests.py --no-guard  # Skip the harness self-check
 ```
+
+### Offline Runs
+
+`SKIP_LIVE_TESTS=1` is the one switch that turns live tests off, and it is
+authoritative everywhere: `--fast` sets it for every chapter, but exporting it
+yourself has the same effect when you invoke a chapter's tests directly, e.g.
+`SKIP_LIVE_TESTS=1 poetry run python -m pytest test_all_chapter_examples.py`.
+An exported `ANTHROPIC_API_KEY` does **not** re-enable live tests.
+
+`chapter_test_support.py` holds that policy (`live_tests_enabled()`,
+`api_key_available()`, `env_flag()`), so script-style chapters and pytest
+chapters decide the same way. Before any chapter runs, `run_all_tests.py`
+executes `test_offline_policy.py`, which checks that:
+
+* every chapter test file is registered in the runner (no orphaned tests);
+* `SKIP_LIVE_TESTS=1` marks every live test skipped even with dummy provider
+  keys exported, and leaves them enabled without it;
+* the offline chapters stay green with dummy keys while
+  `offline_guard/sitecustomize.py` turns any outbound socket into an error.
 
 ## Repository Structure
 
 ```
 .
 ├── run_all_tests.py                    # Unified test runner
+├── chapter_test_support.py             # Shared offline/live policy for every chapter
+├── test_offline_policy.py              # Guard test: offline policy, registry, no network
+├── offline_guard/sitecustomize.py      # Blocks outbound sockets in offline runs
 ├── ch01_dont_panic/                    # Signatures, Modules, first program
 │   ├── startup_roaster.py
 │   └── test_startup_roaster.py
@@ -90,16 +113,19 @@ python run_all_tests.py -v       # Full output for debugging
 
 | Component | Choice |
 |-----------|--------|
-| **DSPy** | 3.5.x (`dspy>=3.5.0,<4.0.0`) |
+| **DSPy** | 3.5.0 (pinned in every `pyproject.toml` and `poetry.lock`) |
 | **Primary LLM** | Anthropic Claude |
 | **Python** | 3.10–3.15 |
 | **Package Manager** | Poetry |
 | **Test Framework** | pytest |
 
 Each chapter is self-contained with its own `pyproject.toml` and `poetry.lock`,
-pinned to DSPy 3.5.x. Provider access (Anthropic, OpenAI, …) routes through
-LiteLLM, which ships as the optional extra `dspy[litellm]`, so every chapter
-declares it explicitly. Retrieval chapters add `dspy[numpy,openai]` for vector
+pinned to DSPy 3.5.0 (`poetry check --lock` passes in every chapter). `dspy.LM` defaults to `engine="auto"`, which resolves
+models in its built-in registry (Anthropic, OpenAI, Gemini, Groq, OpenRouter, …)
+to DSPy's native adapters — no extra installed. LiteLLM is the **compatibility fallback**: it handles unknown
+model strings and provider options the native engine has no verdict for, and
+it ships as the optional extra `dspy[litellm]`, which every chapter declares so
+that fallback path works. Retrieval chapters add `dspy[numpy,openai]` for vector
 search and hosted embeddings; the optimizer chapter adds `dspy[optuna]`.
 
 Chapter 3 reads a DSPy source checkout. Clone it beside this repository (or set
@@ -117,9 +143,10 @@ These examples track DSPy 3.5.0. The changes that affect the book's code:
 |------|------------------|--------------------|
 | Default adapter | `XMLAdapter(use_native_function_calling=True)` | Adapter chapters name XML as the default and keep Chat/JSON as alternatives |
 | `ChainOfThought` | exposes `reasoning` (typed `dspy.Reasoning`, may be `None`) | code stringifies with `str(result.reasoning or "")` |
-| `dspy.Embeddings` | `save(path)` / `load(path, embedder)` instance methods | `from_saved()` is gone; examples build an instance then `load()` |
+| `dspy.Embeddings` | `save(path)` / `load(path, embedder)` instance methods, plus the `Embeddings.from_saved(path, embedder)` classmethod | examples build an instance then `load()`; `from_saved()` is still available and skips recomputing corpus embeddings |
 | `dspy.ReAct` | auto-adds a `submit` tool; results expose `history.messages` and `termination_reason` | tests assert `submit`; examples read `result.history.messages` |
 | `dspy.Image` | `from_path()` / `from_url()` | `from_file()` and the `download=` / `verify=` flags are gone |
+| Routing | `engine="auto"` uses native adapters for known providers; LiteLLM is the fallback | chapters keep `dspy[litellm]` declared for the fallback path |
 | Imports | LiteLLM, numpy, openai, optuna are optional extras | chapters declare the extras they use |
 
 ## About the Book
