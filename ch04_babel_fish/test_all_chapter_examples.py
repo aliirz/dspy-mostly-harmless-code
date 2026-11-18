@@ -17,13 +17,16 @@ load_dotenv()
 import dspy
 from pydantic import ValidationError
 
+# Shared live/offline policy (repo root); see chapter_test_support.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from chapter_test_support import live_tests_enabled  # noqa: E402
+
 from ticket_classifier import (
     TicketClassification, ClassifyTicket, TicketClassifier,
     ticket_metric, TRAINSET, VALSET,
     TICKET_CATEGORIES, PRIORITY_LEVELS,
 )
 
-API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 
 def setup_lm():
@@ -495,7 +498,7 @@ LIVE_TESTS = {
 
 
 def main():
-    skip_live = bool(os.getenv("SKIP_LIVE_TESTS")) or not API_KEY
+    skip_live = not live_tests_enabled()
 
     print("=" * 60)
     print("Chapter 4: EVERY Code Example Tested")

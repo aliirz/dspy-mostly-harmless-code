@@ -29,10 +29,18 @@ load_dotenv()
 # Setup: Configure DSPy if API key is available
 # ---------------------------------------------------------------------------
 
-API_KEY = os.getenv("LLM_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
-HAS_API_KEY = bool(API_KEY)
 
-if HAS_API_KEY:
+# Shared live/offline policy (repo root); see chapter_test_support.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from chapter_test_support import live_tests_enabled, live_skip_reason  # noqa: E402
+
+# A provider key alone is not permission to spend money: SKIP_LIVE_TESTS=1
+# (what run_all_tests.py --fast sets) turns every live test below into a skip,
+# whether pytest is invoked by the harness or by hand.
+API_KEY = os.getenv("LLM_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+LIVE_TESTS_ENABLED = live_tests_enabled()
+
+if API_KEY:
     import dspy
     lm = dspy.LM("anthropic/claude-sonnet-5", api_key=API_KEY, max_tokens=1024)
     dspy.configure(lm=lm)
@@ -198,7 +206,7 @@ def test_09_data_flywheel_flush():
 
 def test_10_fastapi_app_creation():
     """Test that the FastAPI app can be created."""
-    if not HAS_API_KEY:
+    if not API_KEY:
         pytest.skip("No API key — can't create FastAPI app (needs dspy.configure)")
 
     from content_moderator import create_app
@@ -216,7 +224,7 @@ def test_10_fastapi_app_creation():
 # LIVE API TESTS (11-18): Require API key + internet
 # ===================================================================
 
-@pytest.mark.skipif(not HAS_API_KEY, reason="No API key available")
+@pytest.mark.skipif(not LIVE_TESTS_ENABLED, reason=live_skip_reason() or "live test")
 def test_11_basic_moderation_safe_content():
     """Test basic moderation with clearly safe content."""
     from content_moderator import ContentModerator
@@ -232,7 +240,7 @@ def test_11_basic_moderation_safe_content():
     assert len(decision.explanation) > 10
 
 
-@pytest.mark.skipif(not HAS_API_KEY, reason="No API key available")
+@pytest.mark.skipif(not LIVE_TESTS_ENABLED, reason=live_skip_reason() or "live test")
 def test_12_basic_moderation_spam_content():
     """Test moderation catches obvious spam."""
     time.sleep(5)  # Small delay between API calls
@@ -250,7 +258,7 @@ def test_12_basic_moderation_spam_content():
     assert decision.action in ("flag_for_review", "reject")
 
 
-@pytest.mark.skipif(not HAS_API_KEY, reason="No API key available")
+@pytest.mark.skipif(not LIVE_TESTS_ENABLED, reason=live_skip_reason() or "live test")
 def test_13_cost_tracking():
     """Test that dspy.track_usage() captures token counts."""
     time.sleep(5)
@@ -271,7 +279,7 @@ def test_13_cost_tracking():
         assert total > 0, f"Expected nonzero tokens for {model_name}"
 
 
-@pytest.mark.skipif(not HAS_API_KEY, reason="No API key available")
+@pytest.mark.skipif(not LIVE_TESTS_ENABLED, reason=live_skip_reason() or "live test")
 def test_14_callback_logging():
     """Test that callbacks capture events during moderation."""
     time.sleep(5)
@@ -288,7 +296,7 @@ def test_14_callback_logging():
     assert summary["errors"] == 0
 
 
-@pytest.mark.skipif(not HAS_API_KEY, reason="No API key available")
+@pytest.mark.skipif(not LIVE_TESTS_ENABLED, reason=live_skip_reason() or "live test")
 def test_15_cache_behavior():
     """Test that caching makes the second call faster."""
     time.sleep(5)
@@ -301,7 +309,7 @@ def test_15_cache_behavior():
     assert result["second_call_seconds"] <= result["first_call_seconds"]
 
 
-@pytest.mark.skipif(not HAS_API_KEY, reason="No API key available")
+@pytest.mark.skipif(not LIVE_TESTS_ENABLED, reason=live_skip_reason() or "live test")
 def test_16_per_request_config():
     """Test per-request model configuration with dspy.context()."""
     time.sleep(5)
@@ -316,7 +324,7 @@ def test_16_per_request_config():
     assert decision.action == "approve"
 
 
-@pytest.mark.skipif(not HAS_API_KEY, reason="No API key available")
+@pytest.mark.skipif(not LIVE_TESTS_ENABLED, reason=live_skip_reason() or "live test")
 def test_17_streaming():
     """Test that streamify produces chunks and a final prediction."""
     time.sleep(10)  # Longer delay before streaming test
@@ -330,7 +338,7 @@ def test_17_streaming():
     assert isinstance(result["num_chunks"], int)
 
 
-@pytest.mark.skipif(not HAS_API_KEY, reason="No API key available")
+@pytest.mark.skipif(not LIVE_TESTS_ENABLED, reason=live_skip_reason() or "live test")
 def test_18_save_and_load():
     """Test saving and loading a moderator."""
     time.sleep(5)
@@ -358,7 +366,7 @@ def test_18_save_and_load():
 # FASTAPI TESTS (19-20): Require API key + internet
 # ===================================================================
 
-@pytest.mark.skipif(not HAS_API_KEY, reason="No API key available")
+@pytest.mark.skipif(not LIVE_TESTS_ENABLED, reason=live_skip_reason() or "live test")
 def test_19_fastapi_health_endpoint():
     """Test the /health endpoint."""
     time.sleep(5)
@@ -376,7 +384,7 @@ def test_19_fastapi_health_endpoint():
     assert "claude" in data["model"].lower() or "anthropic" in data["model"].lower()
 
 
-@pytest.mark.skipif(not HAS_API_KEY, reason="No API key available")
+@pytest.mark.skipif(not LIVE_TESTS_ENABLED, reason=live_skip_reason() or "live test")
 def test_20_fastapi_moderate_endpoint():
     """Test the /moderate endpoint with a real request."""
     time.sleep(10)  # Longer delay before heavy test

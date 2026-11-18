@@ -22,6 +22,10 @@ load_dotenv()
 
 import dspy
 
+# Shared live/offline policy (repo root); see chapter_test_support.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from chapter_test_support import live_tests_enabled  # noqa: E402
+
 from contract_engine import (
     ContractRisk,
     ContractIntelligenceEngine,
@@ -273,7 +277,7 @@ LIVE_TESTS = {"test_live_rlm_call"}
 
 
 def main():
-    skip_live = bool(os.getenv("SKIP_LIVE_TESTS")) or not _api_key_available() or not _deno_available()
+    skip_live = not live_tests_enabled() or not _deno_available()
 
     print("=" * 60)
     print("Chapter 8 Tests: The Infinite Improbability Context")

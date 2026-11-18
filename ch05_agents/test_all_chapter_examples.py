@@ -33,7 +33,9 @@ from research_agent import (
     QuickAnswer, fact_check_reward, review_quality_reward, answer_quality_reward,
 )
 
-API_KEY = os.getenv("ANTHROPIC_API_KEY")
+# Shared live/offline policy (repo root); see chapter_test_support.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from chapter_test_support import live_tests_enabled  # noqa: E402
 
 
 def setup_lm():
@@ -406,8 +408,8 @@ def test_github_prs_live():
 
 def test_fact_checker_live():
     """Run the Fact-Checker agent with real web search and Claude."""
-    if not API_KEY:
-        print("TEST 16: FactChecker live... SKIPPED (no ANTHROPIC_API_KEY)")
+    if not live_tests_enabled():
+        print("TEST 16: FactChecker live... SKIPPED (offline run or no API key)")
         return
     if not HAS_NETWORK:
         print("TEST 16: FactChecker live... SKIPPED (no network)")
@@ -438,8 +440,8 @@ def test_fact_checker_live():
 
 def test_code_reviewer_live():
     """Run the Code Reviewer agent with real GitHub API and Claude."""
-    if not API_KEY:
-        print("TEST 17: CodeReviewer live... SKIPPED (no ANTHROPIC_API_KEY)")
+    if not live_tests_enabled():
+        print("TEST 17: CodeReviewer live... SKIPPED (offline run or no API key)")
         return
     if not HAS_NETWORK:
         print("TEST 17: CodeReviewer live... SKIPPED (no network)")
@@ -472,8 +474,8 @@ def test_code_reviewer_live():
 
 def test_best_of_n_live():
     """Test BestOfN with a live API call."""
-    if not API_KEY:
-        print("TEST 18: BestOfN... SKIPPED (no ANTHROPIC_API_KEY)")
+    if not live_tests_enabled():
+        print("TEST 18: BestOfN... SKIPPED (offline run or no API key)")
         return
     print("TEST 18: BestOfN live run (waiting 30s for rate limit)...")
     time.sleep(30)
@@ -497,8 +499,8 @@ def test_best_of_n_live():
 
 def test_refine_live():
     """Test Refine with a live API call."""
-    if not API_KEY:
-        print("TEST 19: Refine... SKIPPED (no ANTHROPIC_API_KEY)")
+    if not live_tests_enabled():
+        print("TEST 19: Refine... SKIPPED (offline run or no API key)")
         return
     print("TEST 19: Refine live run (waiting 30s for rate limit)...")
     time.sleep(30)
@@ -521,8 +523,8 @@ def test_refine_live():
 
 def test_react_inline_signature_live():
     """Test ReAct with a simple inline signature and web tools."""
-    if not API_KEY:
-        print("TEST 20: ReAct inline... SKIPPED (no ANTHROPIC_API_KEY)")
+    if not live_tests_enabled():
+        print("TEST 20: ReAct inline... SKIPPED (offline run or no API key)")
         return
     if not HAS_NETWORK:
         print("TEST 20: ReAct inline... SKIPPED (no network)")
@@ -570,14 +572,14 @@ LIVE_TESTS = {
 
 
 def main():
-    skip_live = bool(os.getenv("SKIP_LIVE_TESTS")) or not API_KEY
+    skip_live = not live_tests_enabled()
 
     print("=" * 60)
     print("Chapter 5 Tests: So Long, and Thanks for All the Prompts")
     print("DSPy: The Mostly Harmless Guide")
     print("=" * 60)
     print(f"  Network: {'available' if HAS_NETWORK else 'unavailable'}")
-    print(f"  API Key: {'set' if API_KEY else 'not set'}")
+    print(f"  Live tests: {'enabled' if live_tests_enabled() else 'skipped (offline)'}")
     print()
 
     tests = [

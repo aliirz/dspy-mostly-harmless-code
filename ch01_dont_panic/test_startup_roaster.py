@@ -20,6 +20,10 @@ load_dotenv()
 
 import dspy
 
+# Shared live/offline policy (repo root); see chapter_test_support.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from chapter_test_support import live_tests_enabled  # noqa: E402
+
 # Import our chapter code
 from startup_roaster import RoastStartup, StartupRoaster
 
@@ -146,9 +150,8 @@ def test_live_api_call():
 
     This test is skipped if no API key is available.
     """
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        print("TEST: Live API call... SKIPPED (no ANTHROPIC_API_KEY)")
+    if not live_tests_enabled():
+        print("TEST: Live API call... SKIPPED (offline run or no API key)")
         return
 
     print("TEST: Live API call...")
@@ -217,7 +220,7 @@ def main():
         test_live_api_call,
     ]
 
-    skip_live = bool(os.getenv("SKIP_LIVE_TESTS")) or not os.getenv("ANTHROPIC_API_KEY")
+    skip_live = not live_tests_enabled()
 
     passed = 0
     failed = 0

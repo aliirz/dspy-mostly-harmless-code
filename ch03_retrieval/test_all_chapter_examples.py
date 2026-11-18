@@ -16,6 +16,10 @@ load_dotenv()
 
 import numpy as np
 import dspy
+
+# Shared live/offline policy (repo root); see chapter_test_support.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from chapter_test_support import live_tests_enabled  # noqa: E402
 from pydantic import BaseModel, Field, ValidationError
 from typing import Literal
 
@@ -26,10 +30,12 @@ from codebase_qa import (
     answer_quality_metric, CODEBASE_QA_DATASET,
 )
 
-API_KEY = os.getenv("ANTHROPIC_API_KEY")
-
-# Path to the DSPy source code
-REPO_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "dspy", "dspy")
+# Path to the DSPy source code. Same convention as codebase_qa.main(): an
+# explicit DSPY_REPO_PATH wins, otherwise the checkout cloned beside this repo.
+REPO_PATH = os.environ.get(
+    "DSPY_REPO_PATH",
+    os.path.join(os.path.dirname(__file__), "..", "..", "dspy", "dspy"),
+)
 
 # Global state: loaded once, reused across tests
 _files = None
@@ -453,8 +459,9 @@ def test_save_load():
     assert os.path.exists(os.path.join(save_path, "corpus_embeddings.npy"))
     print("  Saved index to disk")
 
-    # Load — DSPy 3.5 dropped the from_saved() classmethod; load() fills an
-    # existing Embeddings instance in place.
+    # Load — DSPy 3.5 offers both: load() fills an existing Embeddings instance
+    # in place, and Embeddings.from_saved(path, embedder) builds a fresh one
+    # without recomputing corpus embeddings.
     loaded = dspy.Embeddings(embedder=tfidf_embedder, corpus=small_corpus, k=3)
     loaded.load(save_path, embedder=tfidf_embedder)
     result = loaded("What is a Signature?")
@@ -507,6 +514,7 @@ def test_get_embedder():
 # Tests in this set call a live LM (and usually the network). SKIP_LIVE_TESTS=1
 # (what run_all_tests.py --fast sets) skips them rather than failing with no key.
 LIVE_TESTS = {
+    "test_get_embedder",  # embeds through the OpenAI backend when its key is set
     "test_openai_embedder",
     "test_codebase_qa",
     "test_codebase_explorer",
@@ -514,8 +522,8 @@ LIVE_TESTS = {
     "test_evaluate",
 }
 
-# These read the DSPy source tree at REPO_PATH; they are skipped, not failed,
-# when the checkout the chapter asks you to clone beside the book is absent.
+# These read the DSPy source tree at REPO_PATH (DSPY_REPO_PATH, or the checkout
+# cloned beside this repo); they are skipped, not failed, when it is absent.
 REPO_TESTS = {
     "test_load_codebase",
     "test_chunk_code_files",
@@ -526,7 +534,7 @@ REPO_TESTS = {
 
 
 def main():
-    skip_live = bool(os.getenv("SKIP_LIVE_TESTS")) or not API_KEY
+    skip_live = not live_tests_enabled()
     has_repo = os.path.isdir(REPO_PATH)
 
     print("=" * 60)
