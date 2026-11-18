@@ -192,6 +192,14 @@ def test_live_api_call():
     dspy.inspect_history(n=1)
 
 
+# ---------------------------------------------------------------------------
+# Live-test classification
+# ---------------------------------------------------------------------------
+# Tests in this set call the Anthropic API. SKIP_LIVE_TESTS=1 (what
+# run_all_tests.py --fast sets) skips them instead of needing a key.
+LIVE_TESTS = {"test_live_api_call"}
+
+
 def main():
     print("=" * 60)
     print("Chapter 1 Tests: Don't Panic")
@@ -209,11 +217,17 @@ def main():
         test_live_api_call,
     ]
 
+    skip_live = bool(os.getenv("SKIP_LIVE_TESTS")) or not os.getenv("ANTHROPIC_API_KEY")
+
     passed = 0
     failed = 0
     skipped = 0
 
     for test in tests:
+        if skip_live and test.__name__ in LIVE_TESTS:
+            print(f"  SKIPPED (live API): {test.__name__}")
+            skipped += 1
+            continue
         try:
             test()
             passed += 1
@@ -225,7 +239,7 @@ def main():
             failed += 1
 
     print(f"\n{'='*60}")
-    print(f"Results: {passed} passed, {failed} failed")
+    print(f"Results: {passed}/{len(tests)} passed, {failed} failed, {skipped} skipped")
     print(f"{'='*60}")
 
     if failed > 0:

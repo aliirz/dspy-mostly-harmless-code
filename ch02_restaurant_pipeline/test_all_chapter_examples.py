@@ -141,7 +141,7 @@ def test_adapter_switching():
     print(f"  Score: {result.lead_score}/100 (via JSONAdapter)")
     print("  PASSED")
 
-    # Reset to default adapter
+    # Back to the default adapter (XMLAdapter in DSPy 3.5, ChatAdapter before)
     dspy.configure(lm=lm)
 
 
@@ -404,11 +404,24 @@ def test_batch_execution():
 # ============================================================
 # MAIN
 # ============================================================
-def main():
-    if not API_KEY:
-        print("ERROR: ANTHROPIC_API_KEY not set. All tests require live API.")
-        sys.exit(1)
+# ---------------------------------------------------------------------------
+# Live-test classification
+# ---------------------------------------------------------------------------
+# Tests in this set call a live LM (and usually the network). SKIP_LIVE_TESTS=1
+# (what run_all_tests.py --fast sets) skips them rather than failing with no key.
+LIVE_TESTS = {
+    "test_summarizer",
+    "test_research_and_summarize",
+    "test_lead_intelligence_engine",
+    "test_adapter_switching",
+    "test_cost_optimized_engine",
+    "test_smart_lead_engine_branching",
+    "test_batch_execution",
+}
 
+
+def main():
+    skip_live = bool(os.getenv("SKIP_LIVE_TESTS")) or not API_KEY
     print("=" * 60)
     print("Chapter 2: EVERY Code Example Tested")
     print("DSPy: The Mostly Harmless Guide")
@@ -428,8 +441,13 @@ def main():
 
     passed = 0
     failed = 0
+    skipped = 0
 
     for test in tests:
+        if skip_live and test.__name__ in LIVE_TESTS:
+            print(f"  SKIPPED (live API): {test.__name__}")
+            skipped += 1
+            continue
         try:
             test()
             passed += 1
@@ -442,7 +460,7 @@ def main():
         print()
 
     print("=" * 60)
-    print(f"Results: {passed}/{len(tests)} passed, {failed} failed")
+    print(f"Results: {passed}/{len(tests)} passed, {failed} failed, {skipped} skipped")
     print("=" * 60)
 
     if failed > 0:

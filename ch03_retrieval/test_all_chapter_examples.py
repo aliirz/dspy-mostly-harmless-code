@@ -453,8 +453,10 @@ def test_save_load():
     assert os.path.exists(os.path.join(save_path, "corpus_embeddings.npy"))
     print("  Saved index to disk")
 
-    # Load
-    loaded = dspy.Embeddings.from_saved(save_path, embedder=tfidf_embedder)
+    # Load — DSPy 3.5 dropped the from_saved() classmethod; load() fills an
+    # existing Embeddings instance in place.
+    loaded = dspy.Embeddings(embedder=tfidf_embedder, corpus=small_corpus, k=3)
+    loaded.load(save_path, embedder=tfidf_embedder)
     result = loaded("What is a Signature?")
     assert len(result.passages) == 3
     assert all(isinstance(p, str) for p in result.passages)
@@ -499,15 +501,33 @@ def test_get_embedder():
 # ============================================================
 # MAIN
 # ============================================================
-def main():
-    if not API_KEY:
-        print("ERROR: ANTHROPIC_API_KEY not set. Most tests require live API.")
-        sys.exit(1)
+# ---------------------------------------------------------------------------
+# Live-test classification
+# ---------------------------------------------------------------------------
+# Tests in this set call a live LM (and usually the network). SKIP_LIVE_TESTS=1
+# (what run_all_tests.py --fast sets) skips them rather than failing with no key.
+LIVE_TESTS = {
+    "test_openai_embedder",
+    "test_codebase_qa",
+    "test_codebase_explorer",
+    "test_codebase_explorer_openai",
+    "test_evaluate",
+}
 
-    if not os.path.isdir(REPO_PATH):
-        print(f"ERROR: DSPy source not found at {REPO_PATH}")
-        print("Clone the DSPy repo or set DSPY_REPO_PATH.")
-        sys.exit(1)
+# These read the DSPy source tree at REPO_PATH; they are skipped, not failed,
+# when the checkout the chapter asks you to clone beside the book is absent.
+REPO_TESTS = {
+    "test_load_codebase",
+    "test_chunk_code_files",
+    "test_embeddings_retrieval",
+    "test_embedder_wrapper",
+    "test_save_load",
+}
+
+
+def main():
+    skip_live = bool(os.getenv("SKIP_LIVE_TESTS")) or not API_KEY
+    has_repo = os.path.isdir(REPO_PATH)
 
     print("=" * 60)
     print("Chapter 3: EVERY Code Example Tested")
@@ -537,8 +557,17 @@ def main():
 
     passed = 0
     failed = 0
+    skipped = 0
 
     for test in tests:
+        if skip_live and test.__name__ in LIVE_TESTS:
+            print(f"  SKIPPED (live API): {test.__name__}")
+            skipped += 1
+            continue
+        if not has_repo and test.__name__ in REPO_TESTS:
+            print(f"  SKIPPED (needs DSPy source at {os.path.abspath(REPO_PATH)}): {test.__name__}")
+            skipped += 1
+            continue
         try:
             result = test()
             if result is not False:
@@ -554,7 +583,7 @@ def main():
         print()
 
     print("=" * 60)
-    print(f"Results: {passed}/{len(tests)} passed, {failed} failed")
+    print(f"Results: {passed}/{len(tests)} passed, {failed} failed, {skipped} skipped")
     print("=" * 60)
 
     if failed > 0:

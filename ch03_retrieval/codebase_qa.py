@@ -248,8 +248,8 @@ CODEBASE_QA_DATASET = [
     dspy.Example(
         question="How does ChainOfThought differ from Predict?",
         answer="ChainOfThought extends Predict by adding a reasoning field. "
-        "It uses an extended signature that includes step-by-step reasoning "
-        "before the final answer."
+        "In DSPy 3.5 that field is typed dspy.Reasoning: it carries the model's "
+        "native thinking when available, else a short plan, and may be None."
     ).with_inputs("question"),
 
     dspy.Example(
@@ -268,16 +268,17 @@ CODEBASE_QA_DATASET = [
 
     dspy.Example(
         question="What is the role of adapters in DSPy?",
-        answer="Adapters format signatures into LM prompts. ChatAdapter "
-        "is the default. JSONAdapter forces JSON output. The adapter "
-        "also handles parsing LM responses back into structured output."
+        answer="Adapters format signatures into LM prompts. XMLAdapter "
+        "is the default as of DSPy 3.5; ChatAdapter and JSONAdapter are "
+        "still available. The adapter also parses LM responses back into "
+        "structured output."
     ).with_inputs("question"),
 
     dspy.Example(
         question="How does DSPy handle saving and loading programs?",
         answer="DSPy programs can be saved and loaded to preserve optimized "
-        "state. The Embeddings class has save() and from_saved() methods "
-        "for persisting retrieval indices to disk."
+        "state. The Embeddings class has save() and load() methods for "
+        "persisting retrieval indices to disk."
     ).with_inputs("question"),
 ]
 

@@ -5,8 +5,8 @@ description = "Chapter 4: The Babel Fish — Optimizers Demystified"
 authors = ["Ali Raza <ali@botterfly.app>"]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.15"
-dspy = {version = ">=3.3.1,<4.0.0", extras = ["optuna"]}
+python = ">=3.10,<3.16"
+dspy = {version = ">=3.5.0,<4.0.0", extras = ["litellm", "optuna"]}
 python-dotenv = ">=1.2.2,<2.0.0"
 
 [build-system]

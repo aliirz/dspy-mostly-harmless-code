@@ -5,8 +5,8 @@ description = "Chapter 8: The Infinite Improbability Context - DSPy The Mostly H
 authors = ["Ali Raza <ali@botterfly.app>"]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.15"
-dspy = ">=3.3.1,<4.0.0"
+python = ">=3.10,<3.16"
+dspy = {version = ">=3.5.0,<4.0.0", extras = ["litellm"]}
 python-dotenv = ">=1.2.2,<2.0.0"
 
 [build-system]

@@ -267,7 +267,14 @@ SERVICE AGREEMENT between TestCorp ("Client") and DevShop ("Vendor").
 # Runner
 # ---------------------------------------------------------------------------
 
+# test_live_rlm_call needs Deno plus a live LM; SKIP_LIVE_TESTS=1
+# (run_all_tests.py --fast) skips it instead of failing.
+LIVE_TESTS = {"test_live_rlm_call"}
+
+
 def main():
+    skip_live = bool(os.getenv("SKIP_LIVE_TESTS")) or not _api_key_available() or not _deno_available()
+
     print("=" * 60)
     print("Chapter 8 Tests: The Infinite Improbability Context")
     print("DSPy: The Mostly Harmless Guide")
@@ -294,8 +301,13 @@ def main():
 
     passed = 0
     failed = 0
+    skipped = 0
 
     for test in tests:
+        if skip_live and test.__name__ in LIVE_TESTS:
+            print(f"  SKIPPED (live RLM): {test.__name__}")
+            skipped += 1
+            continue
         try:
             test()
             passed += 1
@@ -307,7 +319,7 @@ def main():
             failed += 1
 
     print(f"\n{'='*60}")
-    print(f"Results: {passed} passed, {failed} failed")
+    print(f"Results: {passed}/{len(tests)} passed, {failed} failed, {skipped} skipped")
     print(f"{'='*60}")
 
     if failed > 0:

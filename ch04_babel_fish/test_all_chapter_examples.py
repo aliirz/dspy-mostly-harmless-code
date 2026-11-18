@@ -477,10 +477,25 @@ def test_bootstrap_random_search():
 # ============================================================
 # MAIN
 # ============================================================
+# ---------------------------------------------------------------------------
+# Live-test classification
+# ---------------------------------------------------------------------------
+# Tests in this set call a live LM. SKIP_LIVE_TESTS=1 (what
+# run_all_tests.py --fast sets) skips them rather than failing with no key.
+LIVE_TESTS = {
+    "test_baseline",
+    "test_evaluate_baseline",
+    "test_labeled_few_shot",
+    "test_bootstrap_few_shot",
+    "test_mipro_v2",
+    "test_save_load",
+    "test_simba",
+    "test_bootstrap_random_search",
+}
+
+
 def main():
-    if not API_KEY:
-        print("ERROR: ANTHROPIC_API_KEY not set.")
-        sys.exit(1)
+    skip_live = bool(os.getenv("SKIP_LIVE_TESTS")) or not API_KEY
 
     print("=" * 60)
     print("Chapter 4: EVERY Code Example Tested")
@@ -505,8 +520,13 @@ def main():
 
     passed = 0
     failed = 0
+    skipped = 0
 
     for test in tests:
+        if skip_live and test.__name__ in LIVE_TESTS:
+            print(f"  SKIPPED (live API): {test.__name__}")
+            skipped += 1
+            continue
         try:
             result = test()
             if result is not False:
@@ -522,7 +542,7 @@ def main():
         print()
 
     print("=" * 60)
-    print(f"Results: {passed}/{len(tests)} passed, {failed} failed")
+    print(f"Results: {passed}/{len(tests)} passed, {failed} failed, {skipped} skipped")
     print("=" * 60)
 
     if failed > 0:

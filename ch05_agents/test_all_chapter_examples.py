@@ -171,7 +171,9 @@ def test_fact_checker_construction():
     assert "search_web" in tools, "Should have search_web tool"
     assert "fetch_webpage" in tools, "Should have fetch_webpage tool"
     assert "get_wikipedia_summary" in tools, "Should have get_wikipedia_summary tool"
-    assert "finish" in tools, "Should have auto-added 'finish' tool"
+    # DSPy 3.5's ReAct adds a "submit" tool to signal completion; older
+    # releases called the same auto-added tool "finish".
+    assert "submit" in tools, "Should have auto-added 'submit' tool"
 
     print("  PASSED: FactChecker constructed correctly")
 
@@ -188,7 +190,7 @@ def test_code_reviewer_construction():
     assert "read_github_file" in tools
     assert "get_recent_pull_requests" in tools
     assert "get_pr_diff" in tools
-    assert "finish" in tools
+    assert "submit" in tools
 
     print("  PASSED: CodeReviewer constructed correctly")
 
@@ -423,12 +425,14 @@ def test_fact_checker_live():
     assert len(v.evidence) >= 1, "Should have at least 1 source"
     assert len(v.explanation.split()) >= 5, "Explanation should be substantive"
 
-    trajectory = result.trajectory
-    assert len(trajectory) > 0, "Agent should have a trajectory"
+    # DSPy 3.5 removed the `trajectory` attribute; ReAct now reports its
+    # full conversation in `history.messages` plus a `termination_reason`.
+    history = result.history.messages
+    assert len(history) > 0, "Agent should have a conversation history"
 
     print(f"  Verdict: {v.verdict} (confidence: {v.confidence})")
     print(f"  Evidence sources: {len(v.evidence)}")
-    print(f"  Trajectory steps: {len(trajectory)}")
+    print(f"  Trajectory steps: {len(history)} (terminated: {result.termination_reason})")
     print("  PASSED: FactChecker produced valid verdict")
 
 
@@ -456,13 +460,13 @@ def test_code_reviewer_live():
     assert len(r.strengths) >= 1, "Should identify at least 1 strength"
     assert r.verdict in ("approve", "request changes", "needs discussion")
 
-    trajectory = result.trajectory
-    assert len(trajectory) > 0
+    history = result.history.messages
+    assert len(history) > 0
 
     print(f"  Repo: {r.repo_name}")
     print(f"  Verdict: {r.verdict}")
     print(f"  Review items: {len(r.review_items)}")
-    print(f"  Trajectory steps: {len(trajectory)}")
+    print(f"  Trajectory steps: {len(history)} (terminated: {result.termination_reason})")
     print("  PASSED: CodeReviewer produced valid review")
 
 
@@ -544,7 +548,30 @@ def test_react_inline_signature_live():
 # Main
 # ═══════════════════════════════════════════════════════════════════════════
 
+# ---------------------------------------------------------------------------
+# Live-test classification
+# ---------------------------------------------------------------------------
+# Tests in this set call a live LM (and usually the network). SKIP_LIVE_TESTS=1
+# (what run_all_tests.py --fast sets) skips them rather than failing with no key.
+LIVE_TESTS = {
+    "test_search_web_live",
+    "test_fetch_webpage_live",
+    "test_wikipedia_summary_live",
+    "test_github_repo_info_live",
+    "test_github_list_files_live",
+    "test_github_read_file_live",
+    "test_github_prs_live",
+    "test_fact_checker_live",
+    "test_code_reviewer_live",
+    "test_best_of_n_live",
+    "test_refine_live",
+    "test_react_inline_signature_live",
+}
+
+
 def main():
+    skip_live = bool(os.getenv("SKIP_LIVE_TESTS")) or not API_KEY
+
     print("=" * 60)
     print("Chapter 5 Tests: So Long, and Thanks for All the Prompts")
     print("DSPy: The Mostly Harmless Guide")
@@ -581,8 +608,13 @@ def main():
 
     passed = 0
     failed = 0
+    skipped = 0
 
     for test in tests:
+        if skip_live and test.__name__ in LIVE_TESTS:
+            print(f"  SKIPPED (live API): {test.__name__}")
+            skipped += 1
+            continue
         try:
             test()
             passed += 1
@@ -594,7 +626,7 @@ def main():
             failed += 1
 
     print(f"\n{'='*60}")
-    print(f"Results: {passed}/{passed + failed} passed, {failed} failed")
+    print(f"Results: {passed}/{passed + failed} passed, {failed} failed, {skipped} skipped")
     print(f"{'='*60}")
 
     if failed > 0:

@@ -46,9 +46,10 @@ def create_test_image(width: int = 100, height: int = 100, color: str = "red") -
 def image_from_url(url: str) -> "dspy.Image":
     """Create a dspy.Image from a URL.
 
-    By default, DSPy passes the URL directly to the vision model.
-    Set download=True to fetch the image and encode it as base64
-    (useful when the URL might expire or require auth).
+    DSPy fetches the URL and base64-encodes the bytes, so the image
+    travels inline with the request instead of being referenced by link.
+    (The old download=True/verify=True constructor flags were removed in
+    DSPy 3.5; from_url() is the only supported URL entry point.)
     """
     return dspy.Image.from_url(url)
 
@@ -58,6 +59,8 @@ def image_from_file(path: str) -> "dspy.Image":
 
     Supports PNG, JPEG, GIF, WebP, and other common formats.
     The image is automatically base64-encoded.
+    (This helper wraps dspy.Image.from_path — the 3.5 replacement for
+    the removed dspy.Image.from_file classmethod.)
     """
     return dspy.Image.from_path(path)
 
@@ -260,8 +263,11 @@ class EnsembleReviewAnalyzer(dspy.Module):
                 review_text=review_text,
                 product_category=product_category,
             )
+            # DSPy 3.5: ChainOfThought exposes `reasoning` (a dspy.Reasoning
+            # object, or None when the provider returns no summary). The old
+            # `rationale` attribute is gone.
             completions.append({
-                "rationale": attempt.rationale if hasattr(attempt, "rationale") else "",
+                "reasoning": str(attempt.reasoning or ""),
                 "quality_score": str(attempt.quality_score),
             })
 
@@ -272,6 +278,8 @@ class EnsembleReviewAnalyzer(dspy.Module):
             product_category=product_category,
         )
 
+        # MultiChainComparison still names its synthesized output field
+        # `rationale` (the corrected reasoning).
         return dspy.Prediction(
             sentiment=result.sentiment,
             quality_score=result.quality_score,
@@ -609,9 +617,12 @@ def demonstrate_gepa_setup():
 def demonstrate_adapter_usage():
     """Show how to use different built-in adapters.
 
-    - ChatAdapter (default): Uses [[ ## field ## ]] delimiters. Most flexible.
+    - XMLAdapter (default in DSPy 3.5): XML-tagged fields, with native
+      function calling turned on by default. Implicit default is
+      XMLAdapter(use_native_function_calling=True).
+    - ChatAdapter: The pre-3.5 default — [[ ## field ## ]] delimiters.
+      Still available, and the escape hatch when a model misbehaves under XML.
     - JSONAdapter: Forces JSON output. Good for structured data.
-    - XMLAdapter: Forces XML tags. Some models prefer this.
 
     You set the adapter globally or per-request.
     """
@@ -624,9 +635,9 @@ def demonstrate_adapter_usage():
 
     return {
         "available_adapters": [
-            "dspy.ChatAdapter (default)",
+            "dspy.XMLAdapter (default)",
+            "dspy.ChatAdapter",
             "dspy.JSONAdapter",
-            "dspy.XMLAdapter",
         ],
         "custom_adapter_base": "dspy.adapters.Adapter",
         "required_methods": ["format(signature, demos, inputs)", "parse(signature, completion)"],

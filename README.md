@@ -14,7 +14,7 @@ This repository contains the tested, working code examples for every chapter of 
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.10–3.15 (DSPy 3.5 supports `>=3.10,<3.16`)
 - [Poetry](https://python-poetry.org/docs/#installation)
 - An API key from [Anthropic](https://console.anthropic.com/) or [OpenAI](https://platform.openai.com/)
 
@@ -36,9 +36,9 @@ poetry run python -m pytest test_startup_roaster.py -v
 ### Run All Chapter Tests
 
 ```bash
-python run_all_tests.py          # Full suite (all 7 chapters)
+python run_all_tests.py          # Full suite (all 8 chapters)
 python run_all_tests.py -c 4     # Just Chapter 4
-python run_all_tests.py --fast   # Structural tests only (no API calls)
+python run_all_tests.py --fast   # Offline tests only (live API tests reported as skipped)
 python run_all_tests.py -v       # Full output for debugging
 ```
 
@@ -65,9 +65,12 @@ python run_all_tests.py -v       # Full output for debugging
 ├── ch06_production/                    # Caching, streaming, FastAPI
 │   ├── content_moderator.py
 │   └── test_all_chapter_examples.py
-└── ch07_advanced/                      # Vision, reasoning, advanced optimizers
-    ├── multimodal_analyzer.py
-    └── test_all_chapter_examples.py
+├── ch07_advanced/                      # Vision, reasoning, advanced optimizers
+│   ├── multimodal_analyzer.py
+│   └── test_all_chapter_examples.py
+└── ch08_rlm/                           # Recursive Language Models, sub-LLMs
+    ├── contract_engine.py
+    └── test_contract_engine.py
 ```
 
 ## Chapters at a Glance
@@ -81,18 +84,43 @@ python run_all_tests.py -v       # Full output for debugging
 | 5 | **So Long, and Thanks for All the Prompts** | Research Agent | Agents, tools, ReAct |
 | 6 | **Mostly Harmless (in Production)** | Content Moderation Pipeline | Caching, streaming, FastAPI |
 | 7 | **The Answer Is 42 (Tokens)** | Multimodal Product Analyzer | Vision, reasoning, advanced optimizers |
+| 8 | **The Infinite Improbability Context** | Contract Intelligence Engine | Recursive Language Models, sandboxed tools, sub-LLM budgets |
 
 ## Technical Stack
 
 | Component | Choice |
 |-----------|--------|
-| **DSPy** | 3.1.x |
+| **DSPy** | 3.5.x (`dspy>=3.5.0,<4.0.0`) |
 | **Primary LLM** | Anthropic Claude |
-| **Python** | 3.11+ |
+| **Python** | 3.10–3.15 |
 | **Package Manager** | Poetry |
 | **Test Framework** | pytest |
 
-Each chapter is self-contained with its own `pyproject.toml` and `.env.example`.
+Each chapter is self-contained with its own `pyproject.toml` and `poetry.lock`,
+pinned to DSPy 3.5.x. Provider access (Anthropic, OpenAI, …) routes through
+LiteLLM, which ships as the optional extra `dspy[litellm]`, so every chapter
+declares it explicitly. Retrieval chapters add `dspy[numpy,openai]` for vector
+search and hosted embeddings; the optimizer chapter adds `dspy[optuna]`.
+
+Chapter 3 reads a DSPy source checkout. Clone it beside this repository (or set
+`DSPY_REPO_PATH`) before running that chapter's retrieval tests:
+
+```bash
+git clone --branch 3.5.0 https://github.com/stanfordnlp/dspy ../dspy
+```
+
+## DSPy 3.5 Migration Notes
+
+These examples track DSPy 3.5.0. The changes that affect the book's code:
+
+| Area | DSPy 3.5 behavior | What the code does |
+|------|------------------|--------------------|
+| Default adapter | `XMLAdapter(use_native_function_calling=True)` | Adapter chapters name XML as the default and keep Chat/JSON as alternatives |
+| `ChainOfThought` | exposes `reasoning` (typed `dspy.Reasoning`, may be `None`) | code stringifies with `str(result.reasoning or "")` |
+| `dspy.Embeddings` | `save(path)` / `load(path, embedder)` instance methods | `from_saved()` is gone; examples build an instance then `load()` |
+| `dspy.ReAct` | auto-adds a `submit` tool; results expose `history.messages` and `termination_reason` | tests assert `submit`; examples read `result.history.messages` |
+| `dspy.Image` | `from_path()` / `from_url()` | `from_file()` and the `download=` / `verify=` flags are gone |
+| Imports | LiteLLM, numpy, openai, optuna are optional extras | chapters declare the extras they use |
 
 ## About the Book
 

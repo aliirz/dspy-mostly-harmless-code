@@ -3,11 +3,15 @@
 run_all_tests.py — The Whole Sort of General Testing Thing
 DSPy: The Mostly Harmless Guide
 
-Runs every test across all 7 chapters and prints a unified report.
+Runs every test across all 8 chapters and prints a unified report.
 Usage:
     python run_all_tests.py              # Run everything
     python run_all_tests.py --chapter 3  # Run only chapter 3
     python run_all_tests.py --fast       # Skip live API tests (structural only)
+
+--fast sets SKIP_LIVE_TESTS=1 for each chapter. Test files classify their own
+live tests, so "skipped" is reported separately from "passed" instead of a
+chapter hard-failing because an API key is missing.
 
 Requirements:
     pip install dspy-ai python-dotenv fastapi uvicorn Pillow requests pytest
@@ -74,6 +78,13 @@ CHAPTERS = [
         "runner": "pytest",
         "title": "The Answer Is 42 (Tokens) — Multimodal & Advanced",
     },
+    {
+        "num": 8,
+        "dir": "ch08_rlm",
+        "test_file": "test_contract_engine.py",
+        "runner": "python",
+        "title": "The Infinite Improbability Context — RLM Contract Engine",
+    },
 ]
 
 
@@ -108,6 +119,11 @@ def run_chapter(chapter: dict, code_root: Path, fast: bool = False) -> dict:
     env = os.environ.copy()
     env["PYTHONDONTWRITEBYTECODE"] = "1"
 
+    if fast:
+        # Test files honour this themselves: script runners filter their own
+        # live test list, pytest runners skip live-marked tests.
+        env["SKIP_LIVE_TESTS"] = "1"
+
     if chapter["runner"] == "pytest":
         cmd = [sys.executable, "-m", "pytest", str(test_file), "-v", "--tb=short"]
         if fast:
@@ -115,8 +131,6 @@ def run_chapter(chapter: dict, code_root: Path, fast: bool = False) -> dict:
             cmd += ["-k", "not live and not api"]
     else:
         cmd = [sys.executable, str(test_file)]
-        if fast:
-            env["SKIP_LIVE_TESTS"] = "1"
 
     start = time.time()
     try:
@@ -176,7 +190,7 @@ def main():
         description="Run all DSPy book tests — The Whole Sort of General Testing Thing"
     )
     parser.add_argument(
-        "--chapter", "-c", type=int, help="Run only this chapter number (1-7)"
+        "--chapter", "-c", type=int, help="Run only this chapter number (1-8)"
     )
     parser.add_argument(
         "--fast", "-f", action="store_true",
@@ -195,7 +209,7 @@ def main():
     if args.chapter:
         chapters_to_run = [c for c in CHAPTERS if c["num"] == args.chapter]
         if not chapters_to_run:
-            print(f"No chapter {args.chapter} found. Valid: 1-7")
+            print(f"No chapter {args.chapter} found. Valid: 1-8")
             sys.exit(1)
 
     # ── Banner ──────────────────────────────────────────────────────
