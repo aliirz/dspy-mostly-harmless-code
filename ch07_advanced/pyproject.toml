@@ -6,7 +6,7 @@ authors = ["Ali Raza <ali@botterfly.app>"]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.16"
-dspy = {version = ">=3.5.0,<4.0.0", extras = ["litellm"]}
+dspy = {version = "3.5.0", extras = ["litellm"]}
 python-dotenv = ">=1.2.2,<2.0.0"
 Pillow = ">=11.0.0,<12.0.0"
 requests = ">=2.32.0,<3.0.0"
