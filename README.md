@@ -168,7 +168,7 @@ These examples track DSPy 3.5.0. The changes that affect the book's code:
 | `ChainOfThought` | exposes `reasoning` (typed `dspy.Reasoning`, may be `None`) | code stringifies with `str(result.reasoning or "")` |
 | `dspy.Embeddings` | `save(path)` / `load(path, embedder)` instance methods, plus the `Embeddings.from_saved(path, embedder)` classmethod | examples build an instance then `load()`; `from_saved()` is still available and skips recomputing corpus embeddings |
 | `dspy.ReAct` | auto-adds a `submit` tool; results expose `history.messages` and `termination_reason` | tests assert `submit`; examples read `result.history.messages` |
-| `dspy.Image` | `from_path()` / `from_url()` | `from_file()` and the `download=` / `verify=` flags are gone |
+| `dspy.Image` | `from_path()` / `from_url()`; construction never touches disk or network | `from_file()` is gone and the `download=` / `verify=` *constructor* keywords now raise `TypeError` — but `from_url(url, verify=..., timeout=...)` still takes `verify`, and the code uses that form |
 | Routing | `engine="auto"` uses native adapters for known providers; LiteLLM is the fallback | chapters keep `dspy[litellm]` declared for the fallback path |
 | Imports | LiteLLM, numpy, openai, optuna are optional extras | chapters declare the extras they use |
 
