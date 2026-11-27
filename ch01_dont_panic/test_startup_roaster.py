@@ -20,6 +20,10 @@ load_dotenv()
 
 import dspy
 
+# Shared live/offline policy (repo root); see chapter_test_support.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from chapter_test_support import live_test, run_tests  # noqa: E402
+
 # Import our chapter code
 from startup_roaster import RoastStartup, StartupRoaster
 
@@ -141,16 +145,13 @@ def test_lm_configuration():
     print("  PASSED: LM configuration works")
 
 
+@live_test()
 def test_live_api_call():
-    """Test actual API call if ANTHROPIC_API_KEY is set.
+    """Call the real API once; live runs only (needs an Anthropic key).
 
-    This test is skipped if no API key is available.
+    SKIP_LIVE_TESTS=1, or a missing key, skips this test under both the
+    chapter runner and ``python -m pytest``.
     """
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        print("TEST: Live API call... SKIPPED (no ANTHROPIC_API_KEY)")
-        return
-
     print("TEST: Live API call...")
 
     lm = dspy.LM(
@@ -199,6 +200,8 @@ def main():
     print("=" * 60)
     print()
 
+    # test_live_api_call is marked @live_test(): it skips itself (a real skip,
+    # not a silent pass) unless the run is live and a key is present.
     tests = [
         test_signature_structure,
         test_module_structure,
@@ -209,27 +212,7 @@ def main():
         test_live_api_call,
     ]
 
-    passed = 0
-    failed = 0
-    skipped = 0
-
-    for test in tests:
-        try:
-            test()
-            passed += 1
-        except AssertionError as e:
-            print(f"  FAILED: {e}")
-            failed += 1
-        except Exception as e:
-            print(f"  ERROR: {type(e).__name__}: {e}")
-            failed += 1
-
-    print(f"\n{'='*60}")
-    print(f"Results: {passed} passed, {failed} failed")
-    print(f"{'='*60}")
-
-    if failed > 0:
-        sys.exit(1)
+    run_tests(tests)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "dockerfile": "Dockerfile.test",
+  "command": ["sh", "-c", "SKIP_LIVE_TESTS=1 python run_all_tests.py --fast"],
+  "memory_mb": 2048,
+  "cpus": 1,
+  "timeout_seconds": 900
+}

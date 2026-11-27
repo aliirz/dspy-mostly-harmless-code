@@ -15,6 +15,10 @@ load_dotenv()
 import dspy
 from pydantic import ValidationError
 
+# Shared live/offline policy (repo root); see chapter_test_support.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from chapter_test_support import live_test, run_tests  # noqa: E402
+
 from lead_engine import (
     CompanyIntel,
     IntentClassification,
@@ -57,8 +61,7 @@ def test_literal_constraints():
             potential_pain_points=[],
             tech_stack_signals=[],
         )
-        print("  FAILED: Should have rejected 'huge'")
-        return False
+        raise AssertionError("Should have rejected size_estimate='huge'")
     except ValidationError:
         print("  PASSED: Pydantic rejects invalid Literal values")
 
@@ -68,8 +71,7 @@ def test_literal_constraints():
             intent_signals=[],
             buyer_persona="Test",
         )
-        print("  FAILED: Should have rejected 'blazing'")
-        return False
+        raise AssertionError("Should have rejected intent_level='blazing'")
     except ValidationError:
         print("  PASSED: IntentClassification Literal works too")
 
@@ -161,13 +163,9 @@ def test_adapters():
     print("  PASSED: All 3 adapters configure without error")
 
 
+@live_test()
 def test_live_pipeline():
-    """Test the full pipeline with live API calls."""
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        print("TEST: Live pipeline... SKIPPED (no ANTHROPIC_API_KEY)")
-        return
-
+    """Test the full pipeline with live API calls (live runs only)."""
     print("TEST: Live pipeline (4 LLM calls)...")
 
     lm = dspy.LM(
@@ -212,6 +210,8 @@ def main():
     print("=" * 60)
     print()
 
+    # test_live_pipeline is marked @live_test(): a real skip, not a pass,
+    # unless the run is live and an Anthropic key is present.
     tests = [
         test_pydantic_models,
         test_literal_constraints,
@@ -222,29 +222,7 @@ def main():
         test_live_pipeline,
     ]
 
-    passed = 0
-    failed = 0
-
-    for test in tests:
-        try:
-            result = test()
-            if result is not False:
-                passed += 1
-            else:
-                failed += 1
-        except AssertionError as e:
-            print(f"  FAILED: {e}")
-            failed += 1
-        except Exception as e:
-            print(f"  ERROR: {type(e).__name__}: {e}")
-            failed += 1
-
-    print(f"\n{'=' * 60}")
-    print(f"Results: {passed} passed, {failed} failed")
-    print(f"{'=' * 60}")
-
-    if failed > 0:
-        sys.exit(1)
+    run_tests(tests)
 
 
 if __name__ == "__main__":

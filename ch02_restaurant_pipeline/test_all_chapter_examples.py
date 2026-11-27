@@ -16,13 +16,16 @@ import dspy
 from pydantic import BaseModel, Field
 from typing import Literal
 
+# Shared live/offline policy (repo root); see chapter_test_support.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from chapter_test_support import live_test, run_tests  # noqa: E402
+
 from lead_engine import (
     CompanyIntel, IntentClassification,
     ResearchCompany, ClassifyIntent, ScoreLead, GenerateOutreach,
     LeadIntelligenceEngine,
 )
 
-API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 
 def setup_lm():
@@ -34,6 +37,7 @@ def setup_lm():
 # ============================================================
 # EXAMPLE 1: Summarizer (line 24-32 of chapter)
 # ============================================================
+@live_test()
 def test_summarizer():
     """Test the basic Summarizer module from the chapter."""
     print("TEST: Summarizer module...")
@@ -59,6 +63,7 @@ def test_summarizer():
 # ============================================================
 # EXAMPLE 2: ResearchAndSummarize (line 37-46 of chapter)
 # ============================================================
+@live_test()
 def test_research_and_summarize():
     """Test the chained ResearchAndSummarize module."""
     print("TEST: ResearchAndSummarize module...")
@@ -85,6 +90,7 @@ def test_research_and_summarize():
 # ============================================================
 # EXAMPLE 3: Full LeadIntelligenceEngine (already tested, but run again)
 # ============================================================
+@live_test()
 def test_lead_intelligence_engine():
     """Test the main pipeline from the chapter."""
     print("TEST: LeadIntelligenceEngine full pipeline...")
@@ -119,6 +125,7 @@ def test_lead_intelligence_engine():
 # ============================================================
 # EXAMPLE 4: Adapter switching (line 370-402 of chapter)
 # ============================================================
+@live_test()
 def test_adapter_switching():
     """Test running with JSONAdapter as shown in chapter."""
     print("TEST: Adapter switching (JSONAdapter)...")
@@ -141,7 +148,7 @@ def test_adapter_switching():
     print(f"  Score: {result.lead_score}/100 (via JSONAdapter)")
     print("  PASSED")
 
-    # Reset to default adapter
+    # Back to the default adapter (XMLAdapter in DSPy 3.5, ChatAdapter before)
     dspy.configure(lm=lm)
 
 
@@ -166,6 +173,7 @@ def test_auto_fallback_config():
 # ============================================================
 # EXAMPLE 6: CostOptimizedEngine with dspy.context() (line 429-484)
 # ============================================================
+@live_test()
 def test_cost_optimized_engine():
     """Test the CostOptimizedEngine EXACTLY as written in the chapter."""
     print("TEST: CostOptimizedEngine with dspy.context()...")
@@ -260,6 +268,7 @@ def test_cost_optimized_engine():
 # ============================================================
 # EXAMPLE 7: SmartLeadEngine branching (line 522-574)
 # ============================================================
+@live_test()
 def test_smart_lead_engine_branching():
     """Test the branching pipeline from the chapter."""
     print("TEST: SmartLeadEngine branching pipeline...")
@@ -361,6 +370,7 @@ def test_smart_lead_engine_branching():
 # ============================================================
 # EXAMPLE 8: Parallel / batch execution (line 612-658)
 # ============================================================
+@live_test()
 def test_batch_execution():
     """Test the batch execution pattern from the chapter."""
     print("TEST: Batch execution (2 prospects)...")
@@ -405,16 +415,14 @@ def test_batch_execution():
 # MAIN
 # ============================================================
 def main():
-    if not API_KEY:
-        print("ERROR: ANTHROPIC_API_KEY not set. All tests require live API.")
-        sys.exit(1)
-
     print("=" * 60)
     print("Chapter 2: EVERY Code Example Tested")
     print("DSPy: The Mostly Harmless Guide")
     print("=" * 60)
     print()
 
+    # The seven model-calling examples are marked @live_test(); the rest are
+    # structural and always run.
     tests = [
         test_summarizer,
         test_research_and_summarize,
@@ -426,27 +434,7 @@ def main():
         test_batch_execution,
     ]
 
-    passed = 0
-    failed = 0
-
-    for test in tests:
-        try:
-            test()
-            passed += 1
-        except AssertionError as e:
-            print(f"  FAILED: {e}")
-            failed += 1
-        except Exception as e:
-            print(f"  ERROR: {type(e).__name__}: {e}")
-            failed += 1
-        print()
-
-    print("=" * 60)
-    print(f"Results: {passed}/{len(tests)} passed, {failed} failed")
-    print("=" * 60)
-
-    if failed > 0:
-        sys.exit(1)
+    run_tests(tests)
 
 
 if __name__ == "__main__":
